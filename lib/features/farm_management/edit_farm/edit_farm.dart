@@ -2,25 +2,45 @@ import 'package:exim_project_monitor/core/widgets/custom_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/widgets/primary_button.dart';
-import '../../widgets/date_field.dart';
-import 'add_farm_provider.dart';
+import '../../../core/models/farm_model.dart';
+import '../../../core/widgets/primary_button.dart';
+import '../../../widgets/date_field.dart';
+import 'edit_farm_provider.dart';
 
-class AddFarmScreen extends StatefulWidget {
-  const AddFarmScreen({super.key});
+class EditFarmScreen extends StatefulWidget {
+  const EditFarmScreen({super.key, required this.farm});
+
+  final Farm farm;
 
   @override
-  State<AddFarmScreen> createState() => _AddFarmScreenState();
+  State<EditFarmScreen> createState() => _EditFarmScreenState();
 }
 
-class _AddFarmScreenState extends State<AddFarmScreen> {
+class _EditFarmScreenState extends State<EditFarmScreen> {
+  late final EditFarmProvider _editFarmProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _editFarmProvider = EditFarmProvider();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _editFarmProvider.initFarmData(widget.farm);
+    });
+  }
+
+  @override
+  void dispose() {
+    _editFarmProvider.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Add Farm")),
-      body: ChangeNotifierProvider(
-        create: (context) => AddFarmProvider(),
-        child: Consumer<AddFarmProvider>(
+      appBar: AppBar(title: const Text("Edit Farm")),
+      body: ChangeNotifierProvider.value(
+        value: _editFarmProvider,
+        child: Consumer<EditFarmProvider>(
           builder: (context, farmProvider, child) {
             farmProvider.addFarmScreenContext = context;
             return Padding(
@@ -37,6 +57,9 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                     ),
                     DateField(
                       label: 'Harvest date',
+                      initialDate: farmProvider.harvestDate != null
+                          ? DateTime.tryParse(farmProvider.harvestDate.toString())
+                          : null,
                       onDateSelected: (date) {
                         farmProvider.setHarvestDate(date);
                         debugPrint('Selected date: $date');
@@ -130,7 +153,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
 
 
 
-  Widget _buildMapFarmButton(AddFarmProvider farmProvider) {
+  Widget _buildMapFarmButton(EditFarmProvider farmProvider) {
     return PrimaryButton(
       borderColor: farmProvider.farmSizeController.text.isNotEmpty
           ? Colors.green
@@ -161,7 +184,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
     );
   }
 
-  Widget _buildActionButtons(AddFarmProvider farmProvider) {
+  Widget _buildActionButtons(EditFarmProvider farmProvider) {
     return Row(
       children: [
         Expanded(
@@ -222,12 +245,12 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
   }
 
   Widget _buildTitleAndField(
-    String title,
-    TextEditingController controller, {
-      int maxLines = 1,
-    TextInputType keyboardType = TextInputType.text,
-    bool enabled = true,
-  }) {
+      String title,
+      TextEditingController controller, {
+        int maxLines = 1,
+        TextInputType keyboardType = TextInputType.text,
+        bool enabled = true,
+      }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -246,7 +269,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
   }
 
 
-  Widget _buildProjectIDDropdown(AddFarmProvider farmProvider) {
+  Widget _buildProjectIDDropdown(EditFarmProvider farmProvider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -261,8 +284,8 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
           ),
           child: DropdownButton<String>(
             dropdownColor: Theme.of(context).colorScheme.surface,
-            value: farmProvider.projectIDs.contains(farmProvider.selectedProjectID) 
-                ? farmProvider.selectedProjectID 
+            value: farmProvider.projectIDs.contains(farmProvider.selectedProjectID)
+                ? farmProvider.selectedProjectID
                 : null,
             onChanged: (String? newValue) {
               farmProvider.setSelectedProject(newValue);

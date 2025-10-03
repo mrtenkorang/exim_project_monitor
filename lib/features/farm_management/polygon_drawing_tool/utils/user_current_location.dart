@@ -36,7 +36,7 @@ class UserCurrentLocation {
         'longitude': position.longitude,
         'accuracy': position.accuracy
       });
-      onLocationEnabled!(true, currentPosition);
+      onLocationEnabled(true, currentPosition);
     }
 
     // LocationPermission permission = await Geolocator.requestPermission();

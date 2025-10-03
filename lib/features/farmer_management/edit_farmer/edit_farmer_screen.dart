@@ -1,27 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:get/get.dart';
-import '../../core/widgets/custom_text_field.dart';
-import '../../core/widgets/primary_button.dart';
-import '../../widgets/date_field.dart';
-import '../../widgets/image_field_card.dart';
-import 'add_farmer_provider.dart';
+import '../../../core/models/farmer_model.dart';
+import '../../../core/widgets/custom_text_field.dart';
+import '../../../core/widgets/primary_button.dart';
+import '../../../widgets/date_field.dart';
+import '../../../widgets/image_field_card.dart';
+import 'edit_farmer_provider.dart';
 
-class AddFarmerScreen extends StatefulWidget {
-  const AddFarmerScreen({super.key});
+class EditFarmerScreen extends StatefulWidget {
+  const EditFarmerScreen({super.key, required this.farmer});
+
+  final Farmer farmer;
 
   @override
-  State<AddFarmerScreen> createState() => _AddFarmerScreenState();
+  State<EditFarmerScreen> createState() => _EditFarmerScreenState();
 }
 
-class _AddFarmerScreenState extends State<AddFarmerScreen> {
+class _EditFarmerScreenState extends State<EditFarmerScreen> {
+  late final EditFarmerProvider _provider;
+
+  @override
+  void initState() {
+    super.initState();
+    _provider = EditFarmerProvider();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _provider.initializeFromFarmerData(widget.farmer);
+    });
+  }
+
+  @override
+  void dispose() {
+    _provider.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Farmer')),
-      body: ChangeNotifierProvider(
-        create: (context) => AddFarmerProvider(),
-        child: Consumer<AddFarmerProvider>(
+      appBar: AppBar(title: const Text('Edit Farmer')),
+      body: ChangeNotifierProvider.value(
+        value: _provider,
+        child: Consumer<EditFarmerProvider>(
           builder: (context, farmerProvider, child) {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -30,10 +49,16 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
+                    // _buildRegionDropdown(
+                    //     farmerProvider
+                    // ),
+
                     ImageFieldCard(
                       onTap: () => farmerProvider.pickMedia(source: 1),
                       image: farmerProvider.farmerPhoto?.file,
+                      base64Image: farmerProvider.farmerPhoto?.base64String,
                     ),
+
                     const SizedBox(height: 10),
                     _buildRegionDropdown(farmerProvider),
                     _buildDistrictDropdown(farmerProvider),
@@ -57,12 +82,13 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
                       "Gender",
                       farmerProvider.farmerGenderController,
                     ),
-
                     DateField(
                       label: "Farmer's date of birth (DOB)",
+                      initialDate: farmerProvider.farmerDOB,
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime.now(),
                       onDateSelected: (date) {
                         farmerProvider.setFarmerDOB(date);
-                        debugPrint('Selected date: $date');
                       },
                     ),
 
@@ -76,9 +102,11 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
                     ),
                     DateField(
                       label: 'Planting date',
+                      initialDate: farmerProvider.plantingDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
                       onDateSelected: (date) {
                         farmerProvider.setPlantingDate(date);
-                        debugPrint('Selected date: $date');
                       },
                     ),
                     _buildTitleAndField(
@@ -99,9 +127,11 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
                     ),
                     DateField(
                       label: 'Harvest date',
+                      initialDate: farmerProvider.harvestDate,
+                      firstDate: farmerProvider.plantingDate ?? DateTime.now(),
+                      lastDate: DateTime(2100),
                       onDateSelected: (date) {
                         farmerProvider.setHarvestDate(date);
-                        debugPrint('Selected date: $date');
                       },
                     ),
 
@@ -118,7 +148,8 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
     );
   }
 
-  Widget _buildRegionDropdown(AddFarmerProvider farmProvider) {
+
+  Widget _buildRegionDropdown(EditFarmerProvider farmProvider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -140,8 +171,8 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
               farmProvider.setSelectedRegion(newValue);
             },
             items: farmProvider.regions.map<DropdownMenuItem<String>>((
-              Map<String, dynamic> region,
-            ) {
+                Map<String, dynamic> region,
+                ) {
               return DropdownMenuItem<String>(
                 value: region['region_id']?.toString(),
                 child: Text(region['region']?.toString() ?? ''),
@@ -157,7 +188,7 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
     );
   }
 
-  Widget _buildDistrictDropdown(AddFarmerProvider farmProvider) {
+  Widget _buildDistrictDropdown(EditFarmerProvider farmProvider) {
     final filteredDistricts = farmProvider.getFilteredDistricts();
 
     return Column(
@@ -179,12 +210,12 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
             value: farmProvider.selectedDistrictId,
             onChanged: farmProvider.selectedRegionId != null
                 ? (String? newValue) {
-                    farmProvider.setSelectedDistrict(newValue);
-                  }
+              farmProvider.setSelectedDistrict(newValue);
+            }
                 : null, // Disable if no region selected
             items: filteredDistricts.map<DropdownMenuItem<String>>((
-              Map<String, dynamic> district,
-            ) {
+                Map<String, dynamic> district,
+                ) {
               return DropdownMenuItem<String>(
                 value: district['district_id']?.toString(),
                 child: Text(district['district']?.toString() ?? ''),
@@ -204,7 +235,7 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
     );
   }
 
-  Widget _buildActionButtons(AddFarmerProvider farmProvider) {
+  Widget _buildActionButtons(EditFarmerProvider farmProvider) {
     return Row(
       children: [
         Expanded(
@@ -265,11 +296,11 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
   }
 
   Widget _buildTitleAndField(
-    String title,
-    TextEditingController controller, {
-    TextInputType keyboardType = TextInputType.text,
-    bool enabled = true,
-  }) {
+      String title,
+      TextEditingController controller, {
+        TextInputType keyboardType = TextInputType.text,
+        bool enabled = true,
+      }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

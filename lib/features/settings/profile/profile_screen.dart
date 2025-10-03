@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:exim_project_monitor/core/models/user_model.dart';
 import 'package:exim_project_monitor/core/providers/theme_provider.dart';
-import 'package:exim_project_monitor/core/services/service_locator.dart';
-
-import '../../../core/repositories/user_repository.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -14,18 +11,17 @@ class ProfileScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final userRepository = locator<UserRepository>();
-    var user = userRepository.currentUser;
+    var user;
     
     // If user is null, create a default user
     user ??= User(
-      id: 'guest-${DateTime.now().millisecondsSinceEpoch}',
+      id: 1,
       email: 'guest@example.com',
       fullName: 'Guest User',
       role: 'guest',
       isActive: true,
       createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      updatedAt: DateTime.now(), userId: 1,
     );
 
     return Scaffold(
@@ -218,16 +214,17 @@ class ProfileScreen extends StatelessWidget {
   }) {
     final theme = Theme.of(context);
     
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(vertical: 4.0),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant,
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.1),
           width: 1,
         ),
       ),
+
       child: ListTile(
         leading: Icon(
           icon,

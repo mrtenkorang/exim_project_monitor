@@ -201,7 +201,7 @@ class AppThemeData {
         iconTheme: IconThemeData(color: colorScheme.onPrimary),
       ),
       cardTheme: CardThemeData(
-        elevation: 2,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(_cardBorderRadius),
         ),
@@ -300,14 +300,12 @@ class AppThemeData {
       secondary: Color(0xFF64B5F6),
       secondaryContainer: Color(0xFF1976D2),
       onSecondary: Colors.black87,
-      background: Color(0xFF121212),
-      onBackground: Colors.white,
       surface: Color(0xFF1E1E1E),
       onSurface: Colors.white,
       error: Color(0xFFCF6679),
       onError: Colors.black87,
       brightness: Brightness.dark,
-      surfaceVariant: Color(0xFF2D2D2D),
+      surfaceContainerHighest: Color(0xFF2D2D2D),
       onSurfaceVariant: Color(0xFFB0B0B0),
     );
 
@@ -315,7 +313,7 @@ class AppThemeData {
 
     return lightTheme.copyWith(
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: colorScheme.background,
+      scaffoldBackgroundColor: colorScheme.surface,
       textTheme: GoogleFonts.poppinsTextTheme(TextTheme(
         displayLarge: AppTextStyles.displayLarge.copyWith(color: colorScheme.onBackground),
         displayMedium: AppTextStyles.displayMedium.copyWith(color: colorScheme.onBackground),
@@ -325,9 +323,9 @@ class AppThemeData {
         bodyMedium: AppTextStyles.bodyMedium.copyWith(color: colorScheme.onSurfaceVariant),
         labelLarge: AppTextStyles.labelLarge.copyWith(color: colorScheme.onSurfaceVariant),
         labelSmall: AppTextStyles.labelSmall.copyWith(color: colorScheme.onSurfaceVariant),
-      )),
+      ),),
       appBarTheme: lightTheme.appBarTheme.copyWith(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: colorScheme.onSecondary,
         foregroundColor: colorScheme.onSurface,
         titleTextStyle: GoogleFonts.poppins(
           fontSize: 22,
@@ -342,9 +340,9 @@ class AppThemeData {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: lightTheme.elevatedButtonTheme.style?.copyWith(
-          backgroundColor: MaterialStateProperty.all<Color>(colorScheme.secondary),
-          foregroundColor: MaterialStateProperty.all<Color>(colorScheme.onSecondary),
-          textStyle: MaterialStateProperty.all<TextStyle>(
+          backgroundColor: WidgetStateProperty.all<Color>(colorScheme.secondary),
+          foregroundColor: WidgetStateProperty.all<Color>(colorScheme.onSecondary),
+          textStyle: WidgetStateProperty.all<TextStyle>(
             GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -355,11 +353,11 @@ class AppThemeData {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: lightTheme.outlinedButtonTheme.style?.copyWith(
-          foregroundColor: MaterialStateProperty.all<Color>(colorScheme.secondary),
-          side: MaterialStateProperty.all<BorderSide>(
+          foregroundColor: WidgetStateProperty.all<Color>(colorScheme.secondary),
+          side: WidgetStateProperty.all<BorderSide>(
             BorderSide(color: colorScheme.secondary),
           ),
-          textStyle: MaterialStateProperty.all<TextStyle>(
+          textStyle: WidgetStateProperty.all<TextStyle>(
             GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -370,8 +368,8 @@ class AppThemeData {
       ),
       textButtonTheme: TextButtonThemeData(
         style: lightTheme.textButtonTheme.style?.copyWith(
-          foregroundColor: MaterialStateProperty.all<Color>(colorScheme.secondary),
-          textStyle: MaterialStateProperty.all<TextStyle>(
+          foregroundColor: WidgetStateProperty.all<Color>(colorScheme.secondary),
+          textStyle: WidgetStateProperty.all<TextStyle>(
             GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w500,

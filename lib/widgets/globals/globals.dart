@@ -29,13 +29,13 @@ class Globals {
     Get.snackbar(title!, message!,
         messageText: Text(
           message,
-          style: TextStyle(
-              fontSize: 12, fontWeight: FontWeight.w500, color: Theme.of(context!).colorScheme.onSurface),
+          style: const TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
         ),
-        colorText: Theme.of(context).colorScheme.onSurface,
+        colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
         margin: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
-        backgroundColor: backgroundColor??Theme.of(context).colorScheme.surface,
+        backgroundColor: backgroundColor??Colors.red,
         duration: duration != null
             ? Duration(seconds: duration)
             : const Duration(seconds: 3));
@@ -50,12 +50,12 @@ class Globals {
   }) {
     AlertDialog(
       elevation: 0,
-      backgroundColor: Colors.white,
+      // backgroundColor: ,
       scrollable: false,
       insetPadding: const EdgeInsets.all(20.0),
       contentPadding: EdgeInsets.zero,
       clipBehavior: Clip.none,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(18))),
       content: Container(
         width: double.maxFinite,

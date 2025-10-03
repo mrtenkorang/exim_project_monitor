@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../core/services/auth_service.dart';
-import '../../../theme/app_theme.dart';
+import 'login_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,62 +12,14 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
 
   @override
-  void dispose() {
-    _usernameController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _login() async {
-    Navigator.of(context).pushReplacementNamed('/home');
-    // if (!_formKey.currentState!.validate()) return;
-    //
-    // setState(() {
-    //   _isLoading = true;
-    //   _errorMessage = null;
-    // });
-
-    //
-    // try {
-    //   final authService = context.read<AuthService>();
-    //   final user = await authService.login(
-    //     _usernameController.text.trim(),
-    //     _passwordController.text,
-    //   );
-    //
-    //   if (mounted) {
-    //     if (user != null) {
-    //       // Navigate to home screen on successful login
-    //       Navigator.of(context).pushReplacementNamed('/map');
-    //     } else {
-    //       setState(() {
-    //         _errorMessage = 'Invalid username or password';
-    //       });
-    //     }
-    //   }
-    // } catch (e) {
-    //   if (mounted) {
-    //     setState(() {
-    //       _errorMessage = 'An error occurred. Please try again.';
-    //     });
-    //   }
-    // } finally {
-    //   if (mounted) {
-    //     setState(() => _isLoading = false);
-    //   }
-    // }
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loginProvider = context.watch<LoginProvider>();
     
     return Scaffold(
       body: SafeArea(
@@ -108,8 +58,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 48),
                   
                   // Login Form
-                  Card(
-                    elevation: 2,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.onSecondary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    // elevation: 2,
                     child: Padding(
                       padding: const EdgeInsets.all(24.0),
                       child: Form(
@@ -130,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             
                             // Username Field
                             TextFormField(
-                              controller: _usernameController,
+                              controller: loginProvider.usernameController,
                               decoration: const InputDecoration(
                                 labelText: 'Username',
                                 prefixIcon: Icon(Icons.person_outline),
@@ -149,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             
                             // Password Field
                             TextFormField(
-                              controller: _passwordController,
+                              controller: loginProvider.passwordController,
                               decoration: InputDecoration(
                                 labelText: 'Password',
                                 prefixIcon: const Icon(Icons.lock_outline),
@@ -169,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               obscureText: _obscurePassword,
                               textInputAction: TextInputAction.done,
-                              onFieldSubmitted: (_) => _login(),
+                              onFieldSubmitted: (_) => loginProvider.login,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your password';
@@ -184,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             
                             // Login Button
                             FilledButton(
-                              onPressed: _isLoading ? null : _login,
+                              onPressed: () => loginProvider.login,
                               style: FilledButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(

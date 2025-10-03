@@ -553,8 +553,10 @@ class _PolygonDrawingToolState extends State<PolygonDrawingTool>
                               RoundedIconButton(
                                 icon: const Icon(Icons.arrow_back),
                                 size: 45,
-                                backgroundColor: Colors.transparent,
-                                onTap: () => Get.back(),
+                                backgroundColor: Theme.of(context).colorScheme.primary,
+                                onTap: (){
+                                  Navigator.pop(context);
+                                },
                               ),
                               const SizedBox(width: 12),
                               widget.viewOnlyMap!

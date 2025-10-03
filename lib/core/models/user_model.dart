@@ -1,96 +1,166 @@
 class User {
-  final String id;
-  final String email;
-  final String? fullName;  // Maps to full_name in database
-  final String? photoUrl;
-  final String role;  // Changed from isAdmin to role
+  final int id;
+  final String? email;
+  final String? fullName;
+  final String? phoneNumber;
+  final String? profilePicture;
+  final String? address;
+  final DateTime? dateOfBirth;
+  final String? gender;
+  final String? bankAccountNumber;
+  final String? bankName;
+  final String role;
   final bool isActive;
-  final DateTime? lastLogin;
+  final bool isDeleted;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final String? passwordHash;
-  final bool isSynced;
+  final DateTime? deletedAt;
+  final int? addedBy;
+  final int? modifiedBy;
+  final int? deletedBy;
+  final int userId;
+  final int? districtId;
+  final String? password;
 
   const User({
     required this.id,
-    required this.email,
+    this.email,
     this.fullName,
-    this.photoUrl,
-    this.role = 'user',  // Default role is 'user'
+    this.phoneNumber,
+    this.profilePicture,
+    this.address = '',
+    this.dateOfBirth,
+    this.gender,
+    this.bankAccountNumber,
+    this.bankName,
+    this.role = 'user',
     this.isActive = true,
-    this.lastLogin,
+    this.isDeleted = false,
     required this.createdAt,
     required this.updatedAt,
-    this.passwordHash,
-    this.isSynced = false,
+    this.deletedAt,
+    this.addedBy,
+    this.modifiedBy,
+    this.deletedBy,
+    required this.userId,
+    this.districtId,
+    this.password,
   });
 
-  // Convert User to a Map for database storage
+  // login map
+
+
+  // Convert User to a Map for API requests
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'email': email,
-      'username': fullName,
       'full_name': fullName,
-      'profile_image_url': photoUrl,
+      'phone_number': phoneNumber,
+      'profile_picture': profilePicture,
+      'address': address,
+      'date_of_birth': dateOfBirth?.toIso8601String(),
+      'gender': gender,
+      'bank_account_number': bankAccountNumber,
+      'bank_name': bankName,
       'role': role,
-      'phone_number': '',
-      'is_active': isActive ? 1 : 0,
-      // 'lastLogin': lastLogin?.toIso8601String(),
+      'is_active': isActive,
+      'is_deleted': isDeleted,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
-      'is_synced': isSynced ? 1 : 0,
-      // 'passwordHash': passwordHash,
+      'deleted_at': deletedAt?.toIso8601String(),
+      'added_by': addedBy,
+      'modified_by': modifiedBy,
+      'deleted_by': deletedBy,
+      'user': userId,
+      'district': districtId,
     };
   }
 
-  // Create User from a Map (from database)
+  // Create User from a Map (from API response)
   factory User.fromMap(Map<String, dynamic> map) {
     return User(
-      id: map['id'],
-      email: map['email'],
-      // username: map['username'],
-      fullName: map['full_name'],
-      photoUrl: map['profile_image_url'],
-      role: map['role'] ?? 'user',
-      isActive: map['is_active'] == 1,
-      // lastLogin: map['lastLogin'] != null ? DateTime.parse(map['lastLogin']) : null,
-      createdAt: DateTime.parse(map['created_at']),
-      updatedAt: DateTime.parse(map['updated_at']),
-      // passwordHash: map['passwordHash'],
+      id: map['id'] as int? ?? 0,
+      email: map['email'] as String?,
+      fullName: map['full_name'] as String?,
+      phoneNumber: map['phone_number'] as String?,
+      profilePicture: map['profile_picture'] as String?,
+      address: map['address'] as String? ?? '',
+      dateOfBirth: map['date_of_birth'] != null 
+          ? DateTime.tryParse(map['date_of_birth']) 
+          : null,
+      gender: map['gender'] as String?,
+      bankAccountNumber: map['bank_account_number'] as String?,
+      bankName: map['bank_name'] as String?,
+      role: map['role'] as String? ?? 'user',
+      isActive: map['is_active'] as bool? ?? true,
+      isDeleted: map['is_deleted'] as bool? ?? false,
+      createdAt: DateTime.parse(map['created_at'] as String),
+      updatedAt: DateTime.parse(map['updated_at'] as String),
+      deletedAt: map['deleted_at'] != null 
+          ? DateTime.tryParse(map['deleted_at'] as String) 
+          : null,
+      addedBy: map['added_by'] as int?,
+      modifiedBy: map['modified_by'] as int?,
+      deletedBy: map['deleted_by'] as int?,
+      userId: map['user'] as int? ?? 0,
+      districtId: map['district'] as int?,
     );
   }
 
   // Create a copy of User with some fields updated
   User copyWith({
-    String? id,
+    int? id,
     String? email,
     String? fullName,
-    String? photoUrl,
+    String? phoneNumber,
+    String? profilePicture,
+    String? address,
+    DateTime? dateOfBirth,
+    String? gender,
+    String? bankAccountNumber,
+    String? bankName,
     String? role,
     bool? isActive,
-    DateTime? lastLogin,
+    bool? isDeleted,
     DateTime? createdAt,
     DateTime? updatedAt,
-    String? passwordHash,
+    DateTime? deletedAt,
+    int? addedBy,
+    int? modifiedBy,
+    int? deletedBy,
+    int? userId,
+    int? districtId,
+    bool? isSynced,
   }) {
     return User(
       id: id ?? this.id,
       email: email ?? this.email,
       fullName: fullName ?? this.fullName,
-      photoUrl: photoUrl ?? this.photoUrl,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      profilePicture: profilePicture ?? this.profilePicture,
+      address: address ?? this.address,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      gender: gender ?? this.gender,
+      bankAccountNumber: bankAccountNumber ?? this.bankAccountNumber,
+      bankName: bankName ?? this.bankName,
       role: role ?? this.role,
       isActive: isActive ?? this.isActive,
-      lastLogin: lastLogin ?? this.lastLogin,
+      isDeleted: isDeleted ?? this.isDeleted,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      passwordHash: passwordHash ?? this.passwordHash,
+      deletedAt: deletedAt ?? this.deletedAt,
+      addedBy: addedBy ?? this.addedBy,
+      modifiedBy: modifiedBy ?? this.modifiedBy,
+      deletedBy: deletedBy ?? this.deletedBy,
+      userId: userId ?? this.userId,
+      districtId: districtId ?? this.districtId,
     );
   }
 
   @override
   String toString() {
-    return 'User(id: $id, email: $email, displayName: $fullName, role: $role)';
+    return 'User(id: $id, email: $email, fullName: $fullName, role: $role, isActive: $isActive)';
   }
 
   @override
@@ -101,4 +171,25 @@ class User {
 
   @override
   int get hashCode => id.hashCode ^ email.hashCode;
+
+
+
+}
+
+
+class LoginUser {
+  String username;
+  String password;
+
+  LoginUser({
+    required this.username,
+    required this.password,
+  });
+
+  Map<String, dynamic> loginMap() {
+    return {
+      'username': username,
+      'password': password,
+    };
+  }
 }

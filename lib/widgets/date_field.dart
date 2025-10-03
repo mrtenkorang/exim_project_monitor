@@ -10,6 +10,7 @@ class DateField extends StatefulWidget {
   final bool enabled;
   final FormFieldValidator<DateTime>? validator;
   final InputDecoration? decoration;
+  final Color? borderColor;
 
   const DateField({
     super.key,
@@ -22,6 +23,7 @@ class DateField extends StatefulWidget {
     this.enabled = true,
     this.validator,
     this.decoration,
+    this.borderColor,
   });
 
   @override
@@ -85,11 +87,29 @@ class _DateFieldState extends State<DateField> {
             controller: _controller,
             readOnly: true,
             enabled: widget.enabled,
-            decoration: widget.decoration ?? InputDecoration(
+            decoration: InputDecoration(
               // labelText: widget.label,
               hintText: widget.hintText ?? 'Select date',
               suffixIcon: const Icon(Icons.calendar_today),
-              border: const OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: widget.borderColor ?? Colors.grey,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: widget.borderColor ?? Colors.grey.withOpacity(0.5),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: widget.borderColor ?? Theme.of(context).primaryColor,
+                  width: 2,
+                ),
+              ),
             ),
             onTap: _selectDate,
             validator: (value) {

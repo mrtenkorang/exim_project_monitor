@@ -1,10 +1,10 @@
-import 'package:exim_project_monitor/core/models/user_model.dart';
-import 'package:exim_project_monitor/core/repositories/user_repository.dart';
 import 'package:exim_project_monitor/features/home/home.dart';
-import 'package:exim_project_monitor/features/profile/screens/profile_screen.dart';
+import 'package:exim_project_monitor/features/spatial/spatial.dart';
 import 'package:flutter/material.dart';
 
-import '../settings/profile/profile_screen.dart';
+import '../../core/models/custom_user.dart';
+import '../../core/services/cache_service.dart';
+import '../farmers/farmer_list_screen.dart';
 
 class ScreenWrapper extends StatefulWidget {
   const ScreenWrapper({super.key});
@@ -17,7 +17,6 @@ class _ScreenWrapperState extends State<ScreenWrapper> {
   int _selectedIndex = 0;
   bool isLoading = true;
   DateTime? _currentBackPressTime;
-  final UserRepository _userRepository = UserRepository();
 
 
   void _onItemTapped(int index) {
@@ -53,14 +52,33 @@ class _ScreenWrapperState extends State<ScreenWrapper> {
     return true;
   }
 
+  CmUser? _userInfo;
+
+  getUserInfo(){
+    final cacheService = CacheService();
+    cacheService.getUserInfo().then((value) {
+      setState(() {
+        _userInfo = value;
+      });
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getUserInfo();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     final List<Widget> pages = [
-      const HomeScreen(),
-      const ProfileScreen(),
+      Home(userInfo: _userInfo),
+      const FarmerListScreen(),
+      const EarthEngineMap(),
+      // const ProfileScreen(),
       
     ];
 
@@ -82,8 +100,10 @@ class _ScreenWrapperState extends State<ScreenWrapper> {
       type: BottomNavigationBarType.fixed,
       items: [
         _buildNavItem(Icons.home_outlined, Icons.home, 'Home'),
-        _buildNavItem(Icons.person_2_outlined, Icons.person_2, 'Profile'),
-        // _buildNavItem(Icons.group_outlined, Icons.group, 'Farmers'),
+        _buildNavItem(Icons.group_outlined, Icons.group, 'Farmers'),
+        _buildNavItem(Icons.map_outlined, Icons.map, 'Spatial'),
+        // _buildNavItem(Icons.person_2_outlined, Icons.person_2, 'Profile'),
+
         // _buildNavItem(Icons.person_outline, Icons.person, 'PC List'),
         // _buildNavItem(
         //     Icons.receipt_long_outlined, Icons.receipt_long, 'Waybills'),

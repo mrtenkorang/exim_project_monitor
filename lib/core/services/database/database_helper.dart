@@ -1,124 +1,92 @@
-import 'package:path/path.dart';
+
+
+import 'package:flutter/cupertino.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:synchronized/synchronized.dart';
+import '../../models/farm_model.dart';
+import '../../models/farmer_model.dart';
 
-
+/// Database helper class that manages the SQLite database for the application.
+/// Handles database creation, version management, and CRUD operations for both Farm and Farmer models.
 class DatabaseHelper {
+  // Singleton pattern
   static final DatabaseHelper _instance = DatabaseHelper._internal();
-
-  // Static instance getter
-  static DatabaseHelper get instance => _instance;
-
   static Database? _database;
-  final _lock = Lock();
 
   // Database version
   static const int _databaseVersion = 1;
   
   // Database name
-  static const String _databaseName = 'mango_gis.db';
+  static const String _databaseName = 'exim_monitor.db';
 
   // Table names
-  static const String tableUsers = 'users';
   static const String tableFarms = 'farms';
-  static const String tableFarmVisits = 'farm_visits';
-  static const String tableTasks = 'tasks';
-  static const String tableAttachments = 'attachments';
-  static const String tableSyncLogs = 'sync_logs';
+  static const String tableFarmers = 'farmers';
 
   // Common column names
   static const String columnId = 'id';
-  static const String columnCreatedAt = 'created_at';
-  static const String columnUpdatedAt = 'updated_at';
-  static const String columnIsSynced = 'is_synced';
-
-  // Users table columns
-  static const String columnUsername = 'username';
-  static const String columnEmail = 'email';
-  static const String columnFullName = 'full_name';
-  static const String columnRole = 'role';
-  static const String columnZoneId = 'zone_id';
-  static const String columnIsActive = 'is_active';
-  static const String columnProfileImageUrl = 'profile_image_url';
-  static const String columnPhoneNumber = 'phone_number';
+  static const String columnCreatedAt = 'createdAt';
+  static const String columnUpdatedAt = 'updatedAt';
+  static const String columnIsSynced = 'isSynced';
 
   // Farms table columns
-  static const String columnName = 'name';
-  static const String columnFarmerName = 'farmer_name';
-  static const String columnFarmSize = 'farm_size';
-  static const String columnBoundaryPoints = 'boundary_points';
-  static const String columnStatus = 'status';
-  static const String columnAssignedTo = 'assigned_to';
-  static const String columnVerifiedBy = 'verified_by';
-  static const String columnAdditionalData = 'additional_data';
-  static const String columnImageUrls = 'image_urls';
-
-  // Farm visits table columns
-  static const String columnFarmId = 'farm_id';
-  static const String columnVisitDate = 'visit_date';
-  static const String columnOfficerName = 'officer_name';
-  static const String columnOfficerId = 'officer_id';
-  static const String columnObservations = 'observations';
-  static const String columnIssues = 'issues';
-  static const String columnRecommendedActions = 'recommended_actions';
-  static const String columnFollowUpStatus = 'follow_up_status';
-  static const String columnPostHarvestLoss = 'post_harvest_loss';
-  static const String columnSalesVolume = 'sales_volume';
-  static const String columnSellingPrice = 'selling_price';
-  static const String columnTotalRevenue = 'total_revenue';
-  static const String columnMainBuyers = 'main_buyers';
-  static const String columnLandUseClassification = 'land_use_classification';
+  static const String columnProjectId = 'projectId';
+  static const String columnVisitId = 'visitId';
+  static const String columnDateOfVisit = 'dateOfVisit';
+  static const String columnMainBuyers = 'mainBuyers';
+  static const String columnFarmBoundaryPolygon = 'farmBoundaryPolygon';
+  static const String columnLandUseClassification = 'landUseClassification';
   static const String columnAccessibility = 'accessibility';
-  static const String columnProximityToFacilities = 'proximity_to_facilities';
-  static const String columnSatelliteDataLink = 'satellite_data_link';
-  static const String columnProjectPartner = 'project_partner';
-  static const String columnExtensionOfficer = 'extension_officer';
-  static const String columnInputSupplier = 'input_supplier';
-  static const String columnCooperativeGroups = 'cooperative_groups';
-  static const String columnValueChainLinkages = 'value_chain_linkages';
+  static const String columnProximityToFacility = 'proximityToFacility';
+  static const String columnServiceProvider = 'serviceProvider';
+  static const String columnCooperativesOrFarmerGroups = 'cooperativesOrFarmerGroups';
+  static const String columnValueChainLinkages = 'valueChainLinkages';
+  static const String columnOfficerName = 'officerName';
+  static const String columnOfficerId = 'officerId';
+  static const String columnObservations = 'observations';
+  static const String columnIssuesIdentified = 'issuesIdentified';
+  static const String columnInfrastructureIdentified = 'infrastructureIdentified';
+  static const String columnRecommendedActions = 'recommendedActions';
+  static const String columnFollowUpStatus = 'followUpStatus';
+  static const String columnFarmSize = 'farmSize';
+  static const String columnLocation = 'location';
 
-  // Tasks table columns
-  static const String columnTitle = 'title';
-  static const String columnDescription = 'description';
-  static const String columnDueDate = 'due_date';
-  static const String columnPriority = 'priority';
-  static const String columnCompleted = 'completed';
-  static const String columnAssignedBy = 'assigned_by';
+  // Farmers table columns
+  static const String columnName = 'name';
+  static const String columnPhoneNumber = 'phoneNumber';
+  static const String columnFarmerIdNumber = 'farmerIdNumber';
+  static const String columnGender = 'gender';
+  static const String columnDateOfBirth = 'dateOfBirth';
+  static const String columnPhotoPath = 'photoPath';
+  static const String columnRegionId = 'regionId';
+  static const String columnRegionName = 'regionName';
+  static const String columnDistrictId = 'districtId';
+  static const String columnDistrictName = 'districtName';
+  static const String columnCommunity = 'community';
+  static const String columnCropType = 'cropType';
+  static const String columnVarietyBreed = 'varietyBreed';
+  static const String columnPlantingDate = 'plantingDate';
+  static const String columnPlantingDensity = 'plantingDensity';
+  static const String columnLaborHired = 'laborHired';
+  static const String columnEstimatedYield = 'estimatedYield';
+  static const String columnPreviousYield = 'previousYield';
+  static const String columnHarvestDate = 'harvestDate';
 
-  // Attachments table columns
-  static const String columnEntityType = 'entity_type';
-  static const String columnEntityId = 'entity_id';
-  static const String columnFilePath = 'file_path';
-  static const String columnFileType = 'file_type';
-  static const String columnFileSize = 'file_size';
-  static const String columnThumbnailPath = 'thumbnail_path';
-  static const String columnNotes = 'notes';
-
-  // Sync logs table columns
-  static const String columnEntityName = 'entity_name';
-  static const String columnRecordId = 'record_id';
-  static const String columnAction = 'action';
-  static const String columnSyncStatus = 'sync_status';
-  static const String columnErrorMessage = 'error_message';
-
-  factory DatabaseHelper() => _instance;
-
+  // Private constructor
   DatabaseHelper._internal();
 
+  // Factory constructor to return the same instance (singleton)
+  factory DatabaseHelper() => _instance;
+
+  // Getter for database instance
   Future<Database> get database async {
     if (_database != null) return _database!;
-    
-    // Ensure database is only initialized once
-    await _lock.synchronized(() async {
-      if (_database == null) {
-        _database = await _initDatabase();
-      }
-    });
-    
+    _database = await _initDatabase();
     return _database!;
   }
 
+  // Initialize the database
   Future<Database> _initDatabase() async {
     final documentsDirectory = await getApplicationDocumentsDirectory();
     final path = join(documentsDirectory.path, _databaseName);
@@ -131,198 +99,263 @@ class DatabaseHelper {
     );
   }
 
+  // Create database tables
   Future<void> _onCreate(Database db, int version) async {
-    // Create users table
-    await db.execute('''
-      CREATE TABLE $tableUsers (
-        $columnId TEXT PRIMARY KEY,
-        $columnUsername TEXT,
-        $columnEmail TEXT,
-        $columnFullName TEXT,
-        $columnRole TEXT NOT NULL,
-        $columnZoneId TEXT,
-        $columnIsActive INTEGER NOT NULL DEFAULT 1,
-        $columnProfileImageUrl TEXT,
-        $columnPhoneNumber TEXT,
-        $columnCreatedAt TEXT NOT NULL,
-        $columnUpdatedAt TEXT,
-        $columnIsSynced INTEGER NOT NULL DEFAULT 0
-      )
-    ''');
-
     // Create farms table
     await db.execute('''
       CREATE TABLE $tableFarms (
-        $columnId TEXT PRIMARY KEY,
-        $columnFarmerName TEXT NOT NULL,
-        $columnFarmSize REAL NOT NULL,
-        $columnBoundaryPoints TEXT NOT NULL,
-        $columnStatus TEXT NOT NULL,
-        $columnAssignedTo TEXT,
-        $columnVerifiedBy TEXT,
-        $columnAdditionalData TEXT,
-        $columnImageUrls TEXT,
-        $columnZoneId TEXT,
-        $columnCreatedAt TEXT NOT NULL,
-        $columnUpdatedAt TEXT,
-        $columnIsSynced INTEGER NOT NULL DEFAULT 0,
-        FOREIGN KEY ($columnAssignedTo) REFERENCES $tableUsers ($columnId),
-        FOREIGN KEY ($columnVerifiedBy) REFERENCES $tableUsers ($columnId)
-      )
-    ''');
-
-    // Create farm visits table
-    await db.execute('''
-      CREATE TABLE $tableFarmVisits (
-        $columnId TEXT PRIMARY KEY,
-        $columnFarmId TEXT NOT NULL,
-        $columnVisitDate TEXT NOT NULL,
+        $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $columnProjectId TEXT NOT NULL,
+        $columnVisitId TEXT NOT NULL UNIQUE,
+        $columnDateOfVisit TEXT NOT NULL,
+        $columnMainBuyers TEXT NOT NULL,
+        $columnFarmBoundaryPolygon TEXT NOT NULL,
+        $columnLandUseClassification TEXT NOT NULL,
+        $columnAccessibility TEXT NOT NULL,
+        $columnProximityToFacility TEXT NOT NULL,
+        $columnServiceProvider TEXT NOT NULL,
+        $columnCooperativesOrFarmerGroups TEXT NOT NULL,
+        $columnValueChainLinkages TEXT NOT NULL,
         $columnOfficerName TEXT NOT NULL,
         $columnOfficerId TEXT NOT NULL,
-        $columnObservations TEXT,
-        $columnIssues TEXT,
-        $columnRecommendedActions TEXT,
-        $columnFollowUpStatus TEXT,
-        $columnPostHarvestLoss REAL,
-        $columnSalesVolume REAL,
-        $columnSellingPrice REAL,
-        $columnTotalRevenue REAL,
-        $columnMainBuyers TEXT,
-        $columnLandUseClassification TEXT,
-        $columnAccessibility TEXT,
-        $columnProximityToFacilities TEXT,
-        $columnSatelliteDataLink TEXT,
-        $columnProjectPartner TEXT,
-        $columnExtensionOfficer TEXT,
-        $columnInputSupplier TEXT,
-        $columnCooperativeGroups TEXT,
-        $columnValueChainLinkages TEXT,
+        $columnObservations TEXT NOT NULL,
+        $columnIssuesIdentified TEXT NOT NULL,
+        $columnInfrastructureIdentified TEXT NOT NULL,
+        $columnRecommendedActions TEXT NOT NULL,
+        $columnFollowUpStatus TEXT NOT NULL,
+        $columnFarmSize TEXT NOT NULL,
+        $columnLocation TEXT NOT NULL,
         $columnCreatedAt TEXT NOT NULL,
         $columnUpdatedAt TEXT,
-        $columnIsSynced INTEGER NOT NULL DEFAULT 0,
-        FOREIGN KEY ($columnFarmId) REFERENCES $tableFarms ($columnId) ON DELETE CASCADE,
-        FOREIGN KEY ($columnOfficerId) REFERENCES $tableUsers ($columnId)
+        $columnIsSynced INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
-    // Create tasks table
+    // Create farmers table
     await db.execute('''
-      CREATE TABLE $tableTasks (
+      CREATE TABLE $tableFarmers (
         $columnId TEXT PRIMARY KEY,
-        $columnTitle TEXT NOT NULL,
-        $columnDescription TEXT,
-        $columnAssignedTo TEXT NOT NULL,
-        $columnAssignedBy TEXT NOT NULL,
-        $columnDueDate TEXT,
-        $columnPriority TEXT,
-        $columnStatus TEXT NOT NULL,
-        $columnCompleted INTEGER NOT NULL DEFAULT 0,
-        $columnCreatedAt TEXT NOT NULL,
-        $columnUpdatedAt TEXT,
-        $columnIsSynced INTEGER NOT NULL DEFAULT 0,
-        FOREIGN KEY ($columnAssignedTo) REFERENCES $tableUsers ($columnId),
-        FOREIGN KEY ($columnAssignedBy) REFERENCES $tableUsers ($columnId)
-      )
-    ''');
-
-    // Create attachments table
-    await db.execute('''
-      CREATE TABLE $tableAttachments (
-        $columnId TEXT PRIMARY KEY,
-        $columnEntityType TEXT NOT NULL,
-        $columnEntityId TEXT NOT NULL,
-        $columnFilePath TEXT NOT NULL,
-        $columnFileType TEXT NOT NULL,
-        $columnFileSize INTEGER NOT NULL,
-        $columnThumbnailPath TEXT,
-        $columnNotes TEXT,
+        $columnName TEXT NOT NULL,
+        $columnFarmerIdNumber TEXT NOT NULL,
+        $columnPhoneNumber TEXT NOT NULL,
+        $columnGender TEXT NOT NULL,
+        $columnDateOfBirth TEXT NOT NULL,
+        $columnPhotoPath TEXT,
+        $columnRegionName TEXT NOT NULL,
+        $columnDistrictName TEXT NOT NULL,
+        $columnCommunity TEXT NOT NULL,
+        $columnCropType TEXT NOT NULL,
+        $columnVarietyBreed TEXT NOT NULL,
+        $columnPlantingDate TEXT,
+        $columnPlantingDensity TEXT NOT NULL,
+        $columnLaborHired TEXT NOT NULL,
+        $columnEstimatedYield TEXT NOT NULL,
+        $columnPreviousYield TEXT NOT NULL,
+        $columnHarvestDate TEXT,
         $columnCreatedAt TEXT NOT NULL,
         $columnIsSynced INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
-    // Create sync logs table
-    await db.execute('''
-      CREATE TABLE $tableSyncLogs (
-        $columnId TEXT PRIMARY KEY,
-        $columnEntityName TEXT NOT NULL,
-        $columnRecordId TEXT NOT NULL,
-        $columnAction TEXT NOT NULL,
-        $columnSyncStatus TEXT NOT NULL,
-        $columnErrorMessage TEXT,
-        $columnCreatedAt TEXT NOT NULL,
-        $columnUpdatedAt TEXT
-      )
-    ''');
-
-    // Create indexes for better performance
-    await db.execute('CREATE INDEX idx_farms_zone ON $tableFarms($columnZoneId)');
-    await db.execute('CREATE INDEX idx_farms_assigned_to ON $tableFarms($columnAssignedTo)');
-    await db.execute('CREATE INDEX idx_farm_visits_farm_id ON $tableFarmVisits($columnFarmId)');
-    await db.execute('CREATE INDEX idx_tasks_assigned_to ON $tableTasks($columnAssignedTo)');
-    await db.execute('CREATE INDEX idx_attachments_entity ON $tableAttachments($columnEntityType, $columnEntityId)');
-    await db.execute('CREATE INDEX idx_sync_logs_entity ON $tableSyncLogs($columnEntityName, $columnRecordId)');
+    // indexes for better query performance
+    // await db.execute('CREATE INDEX idx_farms_project_id ON $tableFarms($columnProjectId)');
+    // await db.execute('CREATE INDEX idx_farms_visit_id ON $tableFarms($columnVisitId)');
+    // await db.execute('CREATE INDEX idx_farmers_project_id ON $tableFarmers($columnProjectId)');
+    // await db.execute('CREATE INDEX idx_farmers_id_number ON $tableFarmers($columnFarmerIdNumber)');
   }
 
+  // Handle database upgrades
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Handle database upgrades here when version changes
     if (oldVersion < 2) {
-      // Example of a future upgrade
-      // await db.execute('ALTER TABLE $tableFarms ADD COLUMN new_column TEXT');
+      // Add any new tables or columns here for future versions
     }
-  }
-
-  // Helper method to convert a Map to a database-compatible map
-  static Map<String, dynamic> toDatabaseMap(Map<String, dynamic> map) {
-    final dbMap = Map<String, dynamic>.from(map);
-    
-    // Convert DateTime to ISO 8601 string
-    dbMap.forEach((key, value) {
-      if (value is DateTime) {
-        dbMap[key] = value.toIso8601String();
-      } else if (value is bool) {
-        dbMap[key] = value ? 1 : 0;
-      } else if (value is Map || value is List) {
-        dbMap[key] = value.toString();
-      }
-    });
-    
-    return dbMap;
-  }
-
-  // Helper method to parse database map to model
-  static Map<String, dynamic> fromDatabaseMap(Map<String, dynamic> map) {
-    final modelMap = Map<String, dynamic>.from(map);
-    
-    // Convert strings back to appropriate types
-    modelMap.forEach((key, value) {
-      if (value is String) {
-        // Try to parse DateTime
-        try {
-          if (key.endsWith('_at') || key.endsWith('_date') || key == 'due_date') {
-            modelMap[key] = DateTime.parse(value);
-          }
-        } catch (e) {
-          // If parsing fails, keep the original string value
-        }
-        
-        // Convert '1'/'0' to boolean
-        if (value == '1' || value == '0') {
-          modelMap[key] = value == '1';
-        }
-      }
-    });
-    
-    return modelMap;
   }
 
   // Close the database connection
   Future<void> close() async {
-    await _lock.synchronized(() async {
-      if (_database != null) {
-        await _database!.close();
-        _database = null;
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+  }
+
+  // =================== FARM CRUD OPERATIONS ===================
+
+  /// Inserts a new farm record into the database
+  Future<int> insertFarm(Farm farm) async {
+    try {
+      final db = await database;
+      final map = farm.toMap();
+      debugPrint('Inserting farm with polygon data: ${farm.farmBoundaryPolygon}');
+      return await db.insert(tableFarms, map);
+    } catch (e) {
+      debugPrint('Error inserting farm: $e');
+      rethrow;
+    }
+  }
+
+  /// Retrieves a farm by its ID
+  Future<Farm?> getFarm(int id) async {
+    final db = await database;
+    final maps = await db.query(
+      tableFarms,
+      where: '$columnId = ?',
+      whereArgs: [id],
+    );
+    if (maps.isNotEmpty) {
+      return Farm.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  /// Retrieves all farms, optionally filtered by project ID
+  Future<List<Farm>> getAllFarms({String? projectId}) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps;
+    
+    if (projectId != null) {
+      maps = await db.query(
+        tableFarms,
+        where: '$columnProjectId = ?',
+        whereArgs: [projectId],
+      );
+    } else {
+      maps = await db.query(tableFarms);
+    }
+    
+    return List.generate(maps.length, (i) => Farm.fromMap(maps[i]));
+  }
+
+  /// Updates an existing farm record
+  Future<int> updateFarm(Farm farm) async {
+    final db = await database;
+    return await db.update(
+      tableFarms,
+      farm.toMap()..[columnUpdatedAt] = DateTime.now().toIso8601String(),
+      where: '$columnId = ?',
+      whereArgs: [farm.id],
+    );
+  }
+
+  /// Deletes a farm record by ID
+  Future<int> deleteFarm(int id) async {
+    final db = await database;
+    return await db.delete(
+      tableFarms,
+      where: '$columnId = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // =================== FARMER CRUD OPERATIONS ===================
+
+  /// Inserts a new farmer record into the database
+  Future<int> insertFarmer(Farmer farmer) async {
+    final db = await database;
+    try {
+      return await db.insert(tableFarmers, farmer.toMap());
+    } catch (e) {
+      if (e.toString().contains('UNIQUE constraint failed')) {
+        throw Exception('A farmer with this ID number already exists');
       }
-    });
+      rethrow;
+    }
+  }
+
+  /// Retrieves a farmer by ID
+  Future<Farmer?> getFarmer(String id) async {
+    final db = await database;
+    final maps = await db.query(
+      tableFarmers,
+      where: '$columnId = ?',
+      whereArgs: [id],
+    );
+    if (maps.isNotEmpty) {
+      return Farmer.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  /// Retrieves a farmer by ID number
+  Future<Farmer?> getFarmerByIdNumber(String idNumber) async {
+    final db = await database;
+    final maps = await db.query(
+      tableFarmers,
+      where: '$columnFarmerIdNumber = ?',
+      whereArgs: [idNumber],
+    );
+    if (maps.isNotEmpty) {
+      return Farmer.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  /// Retrieves all farmers, optionally filtered by project ID
+  Future<List<Farmer>> getAllFarmers({String? projectId}) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps;
+    
+    if (projectId != null) {
+      maps = await db.query(
+        tableFarmers,
+        where: '$columnProjectId = ?',
+        whereArgs: [projectId],
+      );
+    } else {
+      maps = await db.query(tableFarmers);
+    }
+    
+    return List.generate(maps.length, (i) => Farmer.fromMap(maps[i]));
+  }
+
+  /// Updates an existing farmer record
+  Future<int> updateFarmer(Farmer farmer) async {
+    final db = await database;
+    try {
+      final map = farmer.toMap()..remove(columnId); // Remove ID to prevent update of primary key
+      return await db.update(
+        tableFarmers,
+        map,
+        where: '$columnId = ?',
+        whereArgs: [farmer.id],
+      );
+    } catch (e) {
+      if (e.toString().contains('UNIQUE constraint failed')) {
+        throw Exception('A farmer with this ID number already exists');
+      }
+      rethrow;
+    }
+  }
+
+  /// Deletes a farmer record by ID
+  Future<int> deleteFarmer(String id) async {
+    final db = await database;
+    return await db.delete(
+      tableFarmers,
+      where: '$columnId = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // =================== UTILITY METHODS ===================
+
+  /// Returns the number of records in a table
+  Future<int> getCount(String tableName) async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT COUNT(*) as count FROM $tableName');
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  /// Deletes all records from a table
+  Future<int> clearTable(String tableName) async {
+    final db = await database;
+    return await db.delete(tableName);
+  }
+
+  /// Executes a raw query
+  Future<List<Map<String, dynamic>>> query(String sql, [List<dynamic>? arguments]) async {
+    final db = await database;
+    return await db.rawQuery(sql, arguments ?? []);
   }
 }
+

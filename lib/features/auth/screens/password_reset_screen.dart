@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../../../../core/services/auth_service.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 
@@ -24,36 +22,6 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
     _emailController.dispose();
     super.dispose();
   }
-
-  Future<void> _sendResetLink() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final authService = context.read<AuthService>();
-      // TODO: Implement password reset functionality
-      await Future.delayed(const Duration(seconds: 1)); // Simulate network call
-      
-      if (mounted) {
-        setState(() {
-          _resetSent = true;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Failed to send reset link. Please try again.';
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -139,7 +107,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
       ),
       const SizedBox(height: 24),
       PrimaryButton(
-        onTap: _sendResetLink,
+        onTap: (){},
         isLoading: _isLoading,
         child: const Text('Send Reset Link'),
       ),

@@ -24,7 +24,7 @@ class ImageFieldCard extends StatelessWidget {
       child: Container(
         height: MediaQuery.of(context).size.height * 0.35,
         width: double.infinity,
-        decoration: boxDecoration(),
+        decoration: boxDecoration(context),
         // decoration: image != null
         //   ? BoxDecoration(
         //     borderRadius: BorderRadius.all(Radius.circular(AppBorderRadius.sm)),
@@ -36,33 +36,45 @@ class ImageFieldCard extends StatelessWidget {
         // : BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(AppBorderRadius.sm))),
         child: (image == null && (base64Image == null || base64Image!.isEmpty))
             ? Center(
-                child: Icon(Icons.add_photo_alternate, size: 30, color: Theme.of(context).colorScheme.onSurface),
+                child: Icon(Icons.add_a_photo_outlined, size: 80, color: Theme.of(context).colorScheme.primary),
               )
             : Container(),
       ),
     );
   }
 
-  BoxDecoration boxDecoration() {
+  BoxDecoration boxDecoration(BuildContext context) {
     if (image != null) {
       return BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
           borderRadius: const BorderRadius.all(Radius.circular(10)),
           image: DecorationImage(image: FileImage(image!), fit: BoxFit.cover));
     } else if (base64Image != null && base64Image!.isNotEmpty) {
       try {
+        // Handle both regular base64 strings and data URLs (data:image/...;base64,...)
+        String base64Data = base64Image!;
+        if (base64Image!.startsWith('data:image/')) {
+          // Extract the base64 data part after the comma
+          base64Data = base64Image!.split(',').last;
+        }
+        
+        final imageBytes = base64Decode(base64Data);
         return BoxDecoration(
+            border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
             borderRadius: const BorderRadius.all(Radius.circular(10)),
             image: DecorationImage(
-                image: MemoryImage(base64Decode(base64Image!)),
+                image: MemoryImage(imageBytes),
                 fit: BoxFit.cover));
       } catch (e) {
-        return const BoxDecoration(
-            borderRadius:
-                BorderRadius.all(Radius.circular(10)));
+        debugPrint('Error decoding base64 image: $e');
+        return BoxDecoration(
+            border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+            borderRadius: const BorderRadius.all(Radius.circular(10)));
       }
     } else {
-      return const BoxDecoration(
-          borderRadius: BorderRadius.all(Radius.circular(10)));
+      return BoxDecoration(
+          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+          borderRadius: const BorderRadius.all(Radius.circular(10)));
     }
   }
 }

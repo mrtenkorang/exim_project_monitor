@@ -9,14 +9,15 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:location/location.dart';
-import '../../core/models/farm_model.dart';
-import '../../core/services/database/database_helper.dart';
-import '../../widgets/globals/globals.dart';
 import 'package:geolocator/geolocator.dart' as gl;
+
+import '../../../core/models/farm_model.dart';
+import '../../../core/services/database/database_helper.dart';
+import '../../../widgets/globals/globals.dart';
 
 /// Provider class for managing farm addition operations
 /// Handles location services, polygon drawing, farm validation, and data persistence
-class AddFarmProvider with ChangeNotifier {
+class EditFarmProvider with ChangeNotifier {
   // Database instance
   // ==================================================================================
   // PROPERTIES & DEPENDENCIES
@@ -43,29 +44,29 @@ class AddFarmProvider with ChangeNotifier {
   final TextEditingController dateOfVisitController = TextEditingController();
   final TextEditingController mainBuyersController = TextEditingController();
   final TextEditingController farmBoundaryPolygonController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController landUseClassificationController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController accessibilityController = TextEditingController();
   final TextEditingController proximityToProcessingFacilityController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController serviceProviderController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController cooperativesOrFarmerGroupsController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController valueChainLinkagesController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController officerNameController = TextEditingController();
   final TextEditingController officerIdController = TextEditingController();
   final TextEditingController observationsController = TextEditingController();
   final TextEditingController issuesIdentifiedController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController infrastructureIdentifiedController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController recommendedActionsController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController followUpStatusController =
-      TextEditingController();
+  TextEditingController();
 
   String? _selectedProjectID;
   String? get selectedProjectID => _selectedProjectID;
@@ -80,13 +81,62 @@ class AddFarmProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void initFarmData(Farm farm) {
+    try {
+      // Set the project ID and update the selected project
+      projectIdController.text = farm.projectId ?? '';
+      _selectedProjectID = farm.projectId;
+      
+      // Parse the date from the farm object
+      if (farm.dateOfVisit.isNotEmpty) {
+        try {
+          _harvestDate = DateTime.parse(farm.dateOfVisit);
+          // Format the date to match what the DateField expects (YYYY-MM-DD)
+          dateOfVisitController.text = "${_harvestDate!.year}-${_harvestDate!.month.toString().padLeft(2, '0')}-${_harvestDate!.day.toString().padLeft(2, '0')}";
+        } catch (e) {
+          debugPrint('Error parsing date: $e');
+          dateOfVisitController.text = farm.dateOfVisit; // Fallback to raw string if parsing fails
+          _harvestDate = null; // Reset harvest date if parsing fails
+        }
+      } else {
+        _harvestDate = null; // Reset if no date is provided
+      }
+      
+      // Set other fields
+      farmLocationController.text = farm.location ?? '';
+      farmSizeController.text = farm.farmSize ?? '';
+      visitIdController.text = farm.visitId ?? '';
+      mainBuyersController.text = farm.mainBuyers ?? '';
+      farmBoundaryPolygonController.text = farm.farmBoundaryPolygon ?? '';
+      landUseClassificationController.text = farm.landUseClassification ?? '';
+      accessibilityController.text = farm.accessibility ?? '';
+      proximityToProcessingFacilityController.text = farm.proximityToProcessingFacility ?? '';
+      serviceProviderController.text = farm.serviceProvider ?? '';
+      cooperativesOrFarmerGroupsController.text = farm.cooperativesOrFarmerGroups ?? '';
+      valueChainLinkagesController.text = farm.valueChainLinkages ?? '';
+      officerNameController.text = farm.officerName ?? '';
+      officerIdController.text = farm.officerId ?? '';
+      observationsController.text = farm.observations ?? '';
+      issuesIdentifiedController.text = farm.issuesIdentified ?? '';
+      infrastructureIdentifiedController.text = farm.infrastructureIdentified ?? '';
+      recommendedActionsController.text = farm.recommendedActions ?? '';
+      followUpStatusController.text = farm.followUpStatus ?? '';
+      
+      // Notify listeners to update the UI with the new data
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error initializing farm data: $e');
+      rethrow;
+    }
+  }
+
   @override
   void dispose() {
     farmLocationController.dispose();
     projectIdController.dispose();
     farmSizeController.dispose();
-    // visitIdController.dispose();
-    // dateOfVisitController.dispose();
+    visitIdController.dispose();
+    dateOfVisitController.dispose();
     mainBuyersController.dispose();
     farmBoundaryPolygonController.dispose();
     landUseClassificationController.dispose();
@@ -273,7 +323,7 @@ class AddFarmProvider with ChangeNotifier {
         followUpStatus: followUpStatusController.text.trim(),
         farmSize: farmSizeController.text.trim(),
         location: farmLocationController.text.trim(),
-        isSynced: false, // Set to false by default for new farms
+        isSynced: true,
       );
 
       debugPrint('Saving farm with polygon data: ${farm.farmBoundaryPolygon}');
@@ -340,7 +390,7 @@ class AddFarmProvider with ChangeNotifier {
       final farm = Farm(
         projectId: projectIdController.text.trim(),
         visitId: visitIdController.text.trim(),
-        dateOfVisit: dateOfVisitController.text.trim(),
+        dateOfVisit: _harvestDate.toString(),
         mainBuyers: mainBuyersController.text.trim(),
         farmBoundaryPolygon: polygonData,
         landUseClassification: landUseClassificationController.text.trim(),
@@ -526,11 +576,11 @@ class AddFarmProvider with ChangeNotifier {
   }
 
   bool isLineSegmentIntersectingCircle(
-    LatLng p1,
-    LatLng p2,
-    LatLng center,
-    double radius,
-  ) {
+      LatLng p1,
+      LatLng p2,
+      LatLng center,
+      double radius,
+      ) {
     // Quick check: if either endpoint is inside circle, intersection exists
     double distP1 = gl.Geolocator.distanceBetween(
       p1.latitude,
@@ -557,12 +607,12 @@ class AddFarmProvider with ChangeNotifier {
     double a = dx * dx + dy * dy;
     double b =
         2 *
-        (dx * (p1.latitude - center.latitude) +
-            dy * (p1.longitude - center.longitude));
+            (dx * (p1.latitude - center.latitude) +
+                dy * (p1.longitude - center.longitude));
     double c =
         (p1.latitude - center.latitude) * (p1.latitude - center.latitude) +
-        (p1.longitude - center.longitude) * (p1.longitude - center.longitude) -
-        radius * radius;
+            (p1.longitude - center.longitude) * (p1.longitude - center.longitude) -
+            radius * radius;
 
     double discriminant = b * b - 4 * a * c;
 
@@ -654,167 +704,167 @@ class AddFarmProvider with ChangeNotifier {
     );
   }
 
-  // ==================================================================================
-  // FARM SUBMISSION OPERATIONS
-  // ==================================================================================
+// ==================================================================================
+// FARM SUBMISSION OPERATIONS
+// ==================================================================================
 
-  // handleAddFarm() async {
-  //   final globalProvider = Provider.of<GlobalProvider>(addFarmScreenContext, listen: false);
-  //   final homeProvider = Provider.of<HomeProvider>(addFarmScreenContext, listen: false);
-  //
-  //   polygon!.points.add(polygon!.points.first);
-  //
-  //   var boundaryCoordinates = polygon!.points
-  //       .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
-  //       .toList();
-  //
-  //   globals.startWait(addFarmScreenContext);
-  //
-  //   try {
-  //     DateTime now = DateTime.now();
-  //     String formattedReportingDate = DateFormat('yyyy-MM-dd').format(now);
-  //
-  //     Farm farmData = Farm(
-  //       uid: const Uuid().v4(),
-  //       agent: globalProvider.userInfo.value.userId!,
-  //       cocobod_id: cocobodIDController?.text.trim(),
-  //       farmboundary:
-  //       Uint8List.fromList(utf8.encode(jsonEncode(boundaryCoordinates))),
-  //       farmer: farmerFromServer!.farmerId,
-  //       farmArea: double.parse(farmAreaTC!.text.trim()),
-  //       registrationDate: formattedReportingDate,
-  //       status: SubmissionStatus.submitted,
-  //       societyCode: society?.societyCode,
-  //     );
-  //
-  //     Map<String, dynamic> data = farmData.toJson();
-  //     data.remove('status');
-  //     data.remove('societyCode');
-  //
-  //     debugPrint("FARM DATA :::::: ${data.toString()}");
-  //
-  //     var postResult = await farmerApiInterface.saveFarm(farmData, data);
-  //
-  //     if (postResult['status'] == RequestStatus.True ||
-  //         postResult['status'] == RequestStatus.Exist ||
-  //         postResult['status'] == RequestStatus.NoInternet) {
-  //       await generalCocoaRehabApiInterface.loadAssignedFarms();
-  //
-  //       globals.endWait(addFarmScreenContext);
-  //       Navigator.of(addFarmScreenContext).pop();
-  //
-  //       globals.showSecondaryDialog(
-  //         context: homeProvider.homeScreenContext,
-  //         content: Text(
-  //           postResult['msg'],
-  //           style: const TextStyle(fontSize: 13),
-  //           textAlign: TextAlign.center,
-  //         ),
-  //         status: AlertDialogStatus.success,
-  //         okayTap: () => Navigator.of(homeProvider.homeScreenContext).pop(),
-  //       );
-  //     } else if (postResult['status'] == RequestStatus.False) {
-  //       globals.endWait(addFarmScreenContext);
-  //
-  //       globals.showSecondaryDialog(
-  //         context: addFarmScreenContext,
-  //         content: Text(
-  //           postResult['msg'],
-  //           style: const TextStyle(fontSize: 13),
-  //           textAlign: TextAlign.center,
-  //         ),
-  //         // status: AlertDialogStatus.error,
-  //       );
-  //     }
-  //   } catch (e) {
-  //     globals.endWait(addFarmScreenContext);
-  //     print("Error submitting farm: $e");
-  //
-  //     globals.showSecondaryDialog(
-  //       context: addFarmScreenContext,
-  //       content: const Text(
-  //         'An error occurred while submitting the farm. Please try again.',
-  //         style: TextStyle(fontSize: 13),
-  //         textAlign: TextAlign.center,
-  //       ),
-  //       // status: AlertDialogStatus.error,
-  //     );
-  //   }
-  // }
+// handleAddFarm() async {
+//   final globalProvider = Provider.of<GlobalProvider>(addFarmScreenContext, listen: false);
+//   final homeProvider = Provider.of<HomeProvider>(addFarmScreenContext, listen: false);
+//
+//   polygon!.points.add(polygon!.points.first);
+//
+//   var boundaryCoordinates = polygon!.points
+//       .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
+//       .toList();
+//
+//   globals.startWait(addFarmScreenContext);
+//
+//   try {
+//     DateTime now = DateTime.now();
+//     String formattedReportingDate = DateFormat('yyyy-MM-dd').format(now);
+//
+//     Farm farmData = Farm(
+//       uid: const Uuid().v4(),
+//       agent: globalProvider.userInfo.value.userId!,
+//       cocobod_id: cocobodIDController?.text.trim(),
+//       farmboundary:
+//       Uint8List.fromList(utf8.encode(jsonEncode(boundaryCoordinates))),
+//       farmer: farmerFromServer!.farmerId,
+//       farmArea: double.parse(farmAreaTC!.text.trim()),
+//       registrationDate: formattedReportingDate,
+//       status: SubmissionStatus.submitted,
+//       societyCode: society?.societyCode,
+//     );
+//
+//     Map<String, dynamic> data = farmData.toJson();
+//     data.remove('status');
+//     data.remove('societyCode');
+//
+//     debugPrint("FARM DATA :::::: ${data.toString()}");
+//
+//     var postResult = await farmerApiInterface.saveFarm(farmData, data);
+//
+//     if (postResult['status'] == RequestStatus.True ||
+//         postResult['status'] == RequestStatus.Exist ||
+//         postResult['status'] == RequestStatus.NoInternet) {
+//       await generalCocoaRehabApiInterface.loadAssignedFarms();
+//
+//       globals.endWait(addFarmScreenContext);
+//       Navigator.of(addFarmScreenContext).pop();
+//
+//       globals.showSecondaryDialog(
+//         context: homeProvider.homeScreenContext,
+//         content: Text(
+//           postResult['msg'],
+//           style: const TextStyle(fontSize: 13),
+//           textAlign: TextAlign.center,
+//         ),
+//         status: AlertDialogStatus.success,
+//         okayTap: () => Navigator.of(homeProvider.homeScreenContext).pop(),
+//       );
+//     } else if (postResult['status'] == RequestStatus.False) {
+//       globals.endWait(addFarmScreenContext);
+//
+//       globals.showSecondaryDialog(
+//         context: addFarmScreenContext,
+//         content: Text(
+//           postResult['msg'],
+//           style: const TextStyle(fontSize: 13),
+//           textAlign: TextAlign.center,
+//         ),
+//         // status: AlertDialogStatus.error,
+//       );
+//     }
+//   } catch (e) {
+//     globals.endWait(addFarmScreenContext);
+//     print("Error submitting farm: $e");
+//
+//     globals.showSecondaryDialog(
+//       context: addFarmScreenContext,
+//       content: const Text(
+//         'An error occurred while submitting the farm. Please try again.',
+//         style: TextStyle(fontSize: 13),
+//         textAlign: TextAlign.center,
+//       ),
+//       // status: AlertDialogStatus.error,
+//     );
+//   }
+// }
 
-  // ==================================================================================
-  // OFFLINE FARM STORAGE
-  // ==================================================================================
+// ==================================================================================
+// OFFLINE FARM STORAGE
+// ==================================================================================
 
-  // handleSaveOfflineFarm() async {
-  //   final globalProvider = Provider.of<GlobalProvider>(addFarmScreenContext, listen: false);
-  //   final homeProvider = Provider.of<HomeProvider>(addFarmScreenContext, listen: false);
-  //
-  //   polygon!.points.add(polygon!.points.first);
-  //
-  //   var boundaryCoordinates = polygon!.points
-  //       .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
-  //       .toList();
-  //
-  //   globals.startWait(addFarmScreenContext);
-  //
-  //   try {
-  //     DateTime now = DateTime.now();
-  //     String formattedReportingDate = DateFormat('yyyy-MM-dd').format(now);
-  //
-  //     Farm farmData = Farm(
-  //       // uid: const Uuid().v4(),
-  //       // agent: globalProvider.userInfo.value.userId!,
-  //       // cocobod_id: cocobodIDController?.text.trim(),
-  //       // farmboundary:
-  //       // Uint8List.fromList(utf8.encode(jsonEncode(boundaryCoordinates))),
-  //       // farmer: farmerFromServer!.farmerId,
-  //       // farmArea: double.parse(farmAreaTC!.text.trim()),
-  //       // registrationDate: formattedReportingDate,
-  //       // status: SubmissionStatus.pending,
-  //       // societyCode: society?.societyCode,
-  //     );
-  //
-  //     Map<String, dynamic> data = farmData.toJson();
-  //     data.remove('status');
-  //     data.remove('societyCode');
-  //
-  //     final farmDao = globalProvider.database!.farmDao;
-  //     await farmDao.insertFarm(farmData);
-  //
-  //     globals.endWait(addFarmScreenContext);
-  //
-  //     Navigator.of(addFarmScreenContext).pop(result: {'farm': farmData, 'submitted': false});
-  //
-  //     globals.showSecondaryDialog(
-  //       context: homeProvider.homeScreenContext,
-  //       content: const Text(
-  //         'Farm Record saved',
-  //         style: TextStyle(fontSize: 13),
-  //         textAlign: TextAlign.center,
-  //       ),
-  //       // status: AlertDialogStatus.success,
-  //       okayTap: () => Navigator.of(homeProvider.homeScreenContext).pop(),
-  //     );
-  //   } catch (e) {
-  //     globals.endWait(addFarmScreenContext);
-  //     print("Error saving offline farm: $e");
-  //
-  //     globals.showSecondaryDialog(
-  //       context: addFarmScreenContext,
-  //       content: const Text(
-  //         'An error occurred while saving the farm. Please try again.',
-  //         style: TextStyle(fontSize: 13),
-  //         textAlign: TextAlign.center,
-  //       ),
-  //       status: AlertDialogStatus.error,
-  //     );
-  //   }
-  // }
+// handleSaveOfflineFarm() async {
+//   final globalProvider = Provider.of<GlobalProvider>(addFarmScreenContext, listen: false);
+//   final homeProvider = Provider.of<HomeProvider>(addFarmScreenContext, listen: false);
+//
+//   polygon!.points.add(polygon!.points.first);
+//
+//   var boundaryCoordinates = polygon!.points
+//       .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
+//       .toList();
+//
+//   globals.startWait(addFarmScreenContext);
+//
+//   try {
+//     DateTime now = DateTime.now();
+//     String formattedReportingDate = DateFormat('yyyy-MM-dd').format(now);
+//
+//     Farm farmData = Farm(
+//       // uid: const Uuid().v4(),
+//       // agent: globalProvider.userInfo.value.userId!,
+//       // cocobod_id: cocobodIDController?.text.trim(),
+//       // farmboundary:
+//       // Uint8List.fromList(utf8.encode(jsonEncode(boundaryCoordinates))),
+//       // farmer: farmerFromServer!.farmerId,
+//       // farmArea: double.parse(farmAreaTC!.text.trim()),
+//       // registrationDate: formattedReportingDate,
+//       // status: SubmissionStatus.pending,
+//       // societyCode: society?.societyCode,
+//     );
+//
+//     Map<String, dynamic> data = farmData.toJson();
+//     data.remove('status');
+//     data.remove('societyCode');
+//
+//     final farmDao = globalProvider.database!.farmDao;
+//     await farmDao.insertFarm(farmData);
+//
+//     globals.endWait(addFarmScreenContext);
+//
+//     Navigator.of(addFarmScreenContext).pop(result: {'farm': farmData, 'submitted': false});
+//
+//     globals.showSecondaryDialog(
+//       context: homeProvider.homeScreenContext,
+//       content: const Text(
+//         'Farm Record saved',
+//         style: TextStyle(fontSize: 13),
+//         textAlign: TextAlign.center,
+//       ),
+//       // status: AlertDialogStatus.success,
+//       okayTap: () => Navigator.of(homeProvider.homeScreenContext).pop(),
+//     );
+//   } catch (e) {
+//     globals.endWait(addFarmScreenContext);
+//     print("Error saving offline farm: $e");
+//
+//     globals.showSecondaryDialog(
+//       context: addFarmScreenContext,
+//       content: const Text(
+//         'An error occurred while saving the farm. Please try again.',
+//         style: TextStyle(fontSize: 13),
+//         textAlign: TextAlign.center,
+//       ),
+//       status: AlertDialogStatus.error,
+//     );
+//   }
+// }
 
-  // ==================================================================================
-  // CLEANUP
-  // ==================================================================================
+// ==================================================================================
+// CLEANUP
+// ==================================================================================
 }
 
 class MaximumAccuracy {
