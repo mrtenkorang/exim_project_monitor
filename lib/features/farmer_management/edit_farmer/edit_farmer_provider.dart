@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 
+import '../../../core/constants/constants.dart';
+import '../../../core/models/district_model.dart';
 import '../../../core/models/farmer_model.dart';
 import '../../../core/models/picked_media.dart';
+import '../../../core/models/region_model.dart';
 import '../../../core/services/database/database_helper.dart';
 import '../../../widgets/custom_snackbar.dart';
 import '../../farm_management/polygon_drawing_tool/utils/bytes_to_size.dart';
@@ -35,32 +38,10 @@ class EditFarmerProvider extends ChangeNotifier {
 
   // Selected values
   String? _selectedRegionId;
+  String? _selectedRegionCode;
   String? _selectedDistrictId;
   String? _selectedProjectID;
 
-  final List<Map<String, dynamic>> regions = [
-    {"region_id": "1", "region": "Greater Accra"},
-    {"region_id": "2", "region": "Eastern Region"},
-    {"region_id": "3", "region": "Brong Ahafo"},
-    {"region_id": "4", "region": "Ashanti"},
-    {"region_id": "5", "region": "Western"},
-    {"region_id": "6", "region": "Northern"},
-  ];
-
-  final List<Map<String, dynamic>> districts = [
-    {"region_id": "1", "district_id": "1", "district": "Accra Metro"},
-    {"region_id": "1", "district_id": "2", "district": "Tema Metro"},
-    {"region_id": "2", "district_id": "3", "district": "East Akim"},
-    {"region_id": "2", "district_id": "4", "district": "West Akim"},
-    {"region_id": "3", "district_id": "5", "district": "Sunyani"},
-    {"region_id": "3", "district_id": "6", "district": "Techiman"},
-    {"region_id": "4", "district_id": "7", "district": "Kumasi Metro"},
-    {"region_id": "4", "district_id": "8", "district": "Obuasi"},
-    {"region_id": "5", "district_id": "9", "district": "Takoradi"},
-    {"region_id": "5", "district_id": "10", "district": "Sekondi"},
-    {"region_id": "6", "district_id": "11", "district": "Tamale Metro"},
-    {"region_id": "6", "district_id": "12", "district": "Savelugu"},
-  ];
 
   // Getters
   String? get selectedRegionId => _selectedRegionId;
@@ -79,11 +60,6 @@ class EditFarmerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Get filtered districts based on selected region
-  List<Map<String, dynamic>> getFilteredDistricts() {
-    if (_selectedRegionId == null) return [];
-    return districts.where((district) => district['region_id'] == _selectedRegionId).toList();
-  }
 
   // State
 
@@ -109,6 +85,56 @@ class EditFarmerProvider extends ChangeNotifier {
   DateTime? get plantingDate => _plantingDate;
   DateTime? get harvestDate => _harvestDate;
   DateTime? get farmerDOB => _farmerDOB;
+
+
+  List<Region> regions = [];
+
+  List<District> districts = [];
+
+  // Fetch Districts from local database
+  Future<void> fetchDistricts() async {
+    try {
+      final districts = await DatabaseHelper().getAllDistricts();
+      this.districts = districts;
+
+      debugPrint('Districts count: ${districts.first.toJson()}');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching districts: $e');
+    }
+  }
+
+  // Fetch Regions from local database
+  Future<void> fetchRegions() async {
+    try {
+      final regions = await DatabaseHelper().getAllRegions();
+      this.regions = regions;
+
+      debugPrint('Regions count: ${regions.first.toJson()}');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching regions: $e');
+    }
+  }
+
+  List<String> projectIDs = [];
+
+  /// Fetch projects from local database
+  Future<void> fetchProjects() async {
+    try {
+      final projects = await DatabaseHelper().getAllProjects();
+
+      projects.forEach((project) {
+        projectIDs.add(project.code);
+      });
+      // projectIDs = projects;
+
+      debugPrint('Projects count: ${projects.first.toJson()}');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching projects: $e');
+    }
+  }
 
   void setPlantingDate(DateTime? date) {
     _plantingDate = date;
@@ -140,115 +166,132 @@ class EditFarmerProvider extends ChangeNotifier {
       return null;
     }
   }
+  
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
 
   Future<void> initializeFromFarmerData(Farmer farmer) async {
     try {
       _farmerId = farmer.id;
       
-          // Set basic information
-      farmerNameController.text = farmer.name ?? '';
-      phoneNumberController.text = farmer.phoneNumber ?? '';
-      farmerGenderController.text = farmer.gender ?? '';
-      farmerIdNumberController.text = farmer.idNumber ?? '';
+      // Set basic information
+      farmerNameController.text = farmer.name;
+      phoneNumberController.text = farmer.phoneNumber;
+      farmerGenderController.text = farmer.gender;
+      farmerIdNumberController.text = farmer.idNumber;
+      businessNameController.text = farmer.businessName;
+      projectIdController.text = farmer.projectId;
+
+      setSelectedProject(farmer.projectId);
       
       // Handle date of birth
       _farmerDOB = _parseDate(farmer.dateOfBirth);
       if (_farmerDOB != null) {
-        farmerDOBController.text = "${_farmerDOB!.year}-${_farmerDOB!.month.toString().padLeft(2, '0')}-${_farmerDOB!.day.toString().padLeft(2, '0')}";
+        farmerDOBController.text = _formatDate(_farmerDOB!);
       } else {
-        farmerDOBController.text = farmer.dateOfBirth ?? '';
+        farmerDOBController.text = farmer.dateOfBirth;
       }
       
       // Set location information
-      communityController.text = farmer.community ?? '';
+      communityController.text = farmer.community;
+      
+      debugPrint('Initializing with region: ${farmer.regionName}, district: ${farmer.districtName}');
+      
+      // Ensure regions and districts are loaded first
+      await fetchRegions();
+      await fetchDistricts();
+      await fetchProjects();
+
+      debugPrint('Total regions loaded: ${regions.length}');
+      debugPrint('Total districts loaded: ${districts.length}');
       
       // Set region and district
       if (farmer.regionName.isNotEmpty) {
-        regionController.text = farmer.regionName;
-        final region = regions.firstWhere(
-          (r) => r['region'] == farmer.regionName,
-          orElse: () => {'region_id': null},
+        debugPrint('Looking for region: ${farmer.regionName}');
+        
+        // First try to find the region by name or code
+        var region = regions.firstWhere(
+          (r) => r.region.toLowerCase() == farmer.regionName.toLowerCase() || 
+                 r.regCode.toLowerCase() == farmer.regionName.toLowerCase(),
+          orElse: () => Region(id: 0, region: '', regCode: '', createdAt: '', updatedAt: ''),
         );
-        if (region['region_id'] != null) {
-          _selectedRegionId = region['region_id'].toString();
-        }
-      }
-
-      if (farmer.districtName.isNotEmpty) {
-        districtController.text = farmer.districtName;
-        if (_selectedRegionId != null) {
-          final district = districts.firstWhere(
-            (d) => d['district'] == farmer.districtName && d['region_id'] == _selectedRegionId,
-            orElse: () => {'district_id': null},
-          );
-          if (district['district_id'] != null) {
-            _selectedDistrictId = district['district_id'].toString();
+        
+        if (region.region.isNotEmpty) {
+          debugPrint('Found region: ${region.region} (${region.regCode})');
+          _selectedRegionId = region.regCode;
+          _selectedRegionCode = region.regCode;
+          regionController.text = region.region;
+          
+          // Now set the district after region is set
+          if (farmer.districtName.isNotEmpty) {
+            debugPrint('Looking for district: ${farmer.districtName} in region: ${region.regCode}');
+            
+            // Find the district by name within the selected region (case insensitive)
+            final district = districts.firstWhere(
+              (d) => (d.district.toLowerCase() == farmer.districtName.toLowerCase() ||
+                     (d.districtCode.toLowerCase()) == farmer.districtName.toLowerCase()) &&
+                    d.regCode == _selectedRegionId,
+              orElse: () => District(id: 0, district: '', districtCode: '', regCode: '', region: '', createdAt: DateTime.now(), updatedAt: DateTime.now()),
+            );
+            
+            if (district.district.isNotEmpty) {
+              _selectedDistrictId = district.id.toString();
+              districtController.text = district.district;
+              debugPrint('✓ District set to: ${district.district} (ID: ${district.id})');
+            } else {
+              debugPrint('✗ District not found: ${farmer.districtName} for region: ${region.region}');
+              // Try to find any district that matches the name regardless of region
+              final anyDistrict = districts.firstWhere(
+                (d) => d.district.toLowerCase() == farmer.districtName.toLowerCase() ||
+                       (d.districtCode.toLowerCase() ?? '') == farmer.districtName.toLowerCase(),
+                orElse: () => District(id: 0, district: '', districtCode: '', regCode: '', region: '', createdAt: DateTime.now(), updatedAt: DateTime.now()),
+              );
+              
+              if (anyDistrict.district.isNotEmpty) {
+                debugPrint('Found district in different region: ${anyDistrict.district} (Region: ${anyDistrict.regCode})');
+                districtController.text = anyDistrict.district;
+              }
+            }
           }
+        } else {
+          debugPrint('✗ Region not found: ${farmer.regionName}');
+          debugPrint('Available regions: ${regions.map((r) => '${r.region} (${r.regCode})').toList()}');
         }
       }
       
-      // Set crop information
-      cropTypeController.text = farmer.cropType ?? '';
-      varietyBreedController.text = farmer.varietyBreed ?? '';
-      plantingDensityController.text = farmer.plantingDensity.toString() ?? '';
-      laborHiredController.text = farmer.laborHired.toString() ?? '';
-      estimatedYieldController.text = farmer.estimatedYield.toString() ?? '';
-      yieldInPrevSeason.text = farmer.previousYield.toString() ?? '';
-
-      // Set dates
-      _plantingDate = farmer.plantingDate;
-      _harvestDate = farmer.harvestDate;
-
-          // Set region and district
-      if (farmer.regionName.isNotEmpty) {
-        regionController.text = farmer.regionName;
-        final region = regions.firstWhere(
-          (r) => r['region'] == farmer.regionName,
-          orElse: () => {'region_id': null},
-        );
-        if (region['region_id'] != null) {
-          _selectedRegionId = region['region_id'].toString();
-        }
-      }
-
-      if (farmer.districtName.isNotEmpty) {
-        districtController.text = farmer.districtName;
-        if (_selectedRegionId != null) {
-          final district = districts.firstWhere(
-            (d) => d['district'] == farmer.districtName && d['region_id'] == _selectedRegionId,
-            orElse: () => {'district_id': null},
-          );
-          if (district['district_id'] != null) {
-            _selectedDistrictId = district['district_id'].toString();
-          }
+      // Set project ID if available
+      if (farmer.projectId.isNotEmpty) {
+        if (projectIDs.contains(farmer.projectId)) {
+          _selectedProjectID = farmer.projectId;
         }
       }
 
       // Handle photo
-      if (farmer.photoPath != null && farmer.photoPath!.isNotEmpty) {
-        // Check if it's a base64 string or a file path
-        if (farmer.photoPath!.startsWith('data:image/')) {
-          // It's a base64 string
-          farmerPhoto = PickedMedia(
-            name: 'farmer_${farmer.id}_photo',
-            type: 'image',
-            base64String: farmer.photoPath!,
-          );
-        } else {
-          // It's a file path
-          final file = io.File(farmer.photoPath!);
-          if (await file.exists()) {
-            final base64String = await PickedMedia.fileToBase64(file);
-            farmerPhoto = PickedMedia(
-              name: path.basename(farmer.photoPath!),
-              path: farmer.photoPath!,
-              base64String: base64String,
-              type: 'image',
-              file: file,
-            );
-          }
-        }
-      }
+      // if (farmer.photoPath != null && farmer.photoPath!.isNotEmpty) {
+      //   // Check if it's a base64 string or a file path
+      //   if (farmer.photoPath!.startsWith('data:image/')) {
+      //     // It's a base64 string
+      //     farmerPhoto = PickedMedia(
+      //       name: 'farmer_${farmer.id}_photo',
+      //       type: 'image',
+      //       base64String: farmer.photoPath!,
+      //     );
+      //   } else {
+      //     // It's a file path
+      //     final file = io.File(farmer.photoPath!);
+      //     if (await file.exists()) {
+      //       final base64String = await PickedMedia.fileToBase64(file);
+      //       farmerPhoto = PickedMedia(
+      //         name: path.basename(farmer.photoPath!),
+      //         path: farmer.photoPath!,
+      //         base64String: base64String,
+      //         type: 'image',
+      //         file: file,
+      //       );
+      //     }
+      //   }
+
       
       notifyListeners();
     } catch (e) {
@@ -257,6 +300,16 @@ class EditFarmerProvider extends ChangeNotifier {
     }
   }
 
+
+  String? get selectedProjectID => _selectedProjectID;
+
+  /// Form key for validation of the add farm form
+  ///
+  void setSelectedProject(String? val) {
+    _selectedProjectID = val;
+    projectIdController.text = val ?? '';
+    notifyListeners();
+  }
 
   Future<void> pickMedia({int? source}) async {
     try {
@@ -320,6 +373,7 @@ class EditFarmerProvider extends ChangeNotifier {
 
   saveFarmerOffline(BuildContext context) async {
 
+    debugPrint("Started save offline");
     try {
       Farmer farmer = Farmer(
         idNumber: farmerIdNumberController.text,
@@ -327,27 +381,33 @@ class EditFarmerProvider extends ChangeNotifier {
         phoneNumber: phoneNumberController.text,
         gender: farmerGenderController.text,
         dateOfBirth: farmerDOBController.text,
-        photoPath: farmerPhoto?.path,
+        // photoPath: farmerPhoto?.path,
         regionName: regionController.text,
         districtName: districtController.text,
         community: communityController.text,
-        cropType: cropTypeController.text,
-        varietyBreed: varietyBreedController.text,
-        plantingDate: _plantingDate,
-        plantingDensity: plantingDensityController.text,
-        laborHired: laborHiredController.text,
-        estimatedYield: estimatedYieldController.text,
-        previousYield: yieldInPrevSeason.text,
-        harvestDate: _harvestDate,
+        projectId: projectIdController.text,
+        businessName: businessNameController.text,
+        // cropType: cropTypeController.text,
+        // varietyBreed: varietyBreedController.text,
+        // plantingDate: _plantingDate,
+        // plantingDensity: plantingDensityController.text,
+        // laborHired: laborHiredController.text,
+        // estimatedYield: estimatedYieldController.text,
+        // previousYield: yieldInPrevSeason.text,
+        // harvestDate: _harvestDate,
         createdAt: DateTime.now(),
-        isSynced: false,
+        isSynced: SyncStatus.notSynced,
       );
 
       _isLoading = true;
       notifyListeners();
 
-      final result = await dbHelper.insertFarmer(farmer);
-      if (result > 0) {
+      final result = await dbHelper.updateFarmer(farmer);
+
+      debugPrint("Result: $result");
+
+      if (result >= 0) {
+        Navigator.of(context).pop();
         CustomSnackbar.show(
           context,
           message: 'Farmer added successfully!',

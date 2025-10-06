@@ -1,12 +1,16 @@
 import 'dart:io' as io;
+import 'package:exim_project_monitor/core/models/projects_model.dart';
+import 'package:exim_project_monitor/core/models/region_model.dart';
+import 'package:exim_project_monitor/core/services/api/api.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 
+import '../../core/constants/constants.dart';
+import '../../core/models/district_model.dart';
 import '../../core/models/farmer_model.dart';
 import '../../core/models/picked_media.dart';
 import '../../core/services/database/database_helper.dart';
-import '../../core/utils/validators.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../farm_management/polygon_drawing_tool/utils/bytes_to_size.dart';
 
@@ -30,48 +34,95 @@ class AddFarmerProvider extends ChangeNotifier {
   final TextEditingController laborHiredController = TextEditingController();
   final TextEditingController estimatedYieldController = TextEditingController();
   final TextEditingController yieldInPrevSeason = TextEditingController();
+  final TextEditingController projectIdController = TextEditingController();
 
 
   // Selected values
   String? _selectedRegionId;
+  String? _selectedRegionCode;
   String? _selectedDistrictId;
-  String? _selectedProjectID;
+   List<Region> regions = [];
 
-  final List<Map<String, dynamic>> regions = [
-    {"region_id": "1", "region": "Greater Accra"},
-    {"region_id": "2", "region": "Eastern Region"},
-    {"region_id": "3", "region": "Brong Ahafo"},
-    {"region_id": "4", "region": "Ashanti"},
-    {"region_id": "5", "region": "Western"},
-    {"region_id": "6", "region": "Northern"},
-  ];
+  List<District> districts = [];
 
-  final List<Map<String, dynamic>> districts = [
-    {"region_id": "1", "district_id": "1", "district": "Accra Metro"},
-    {"region_id": "1", "district_id": "2", "district": "Tema Metro"},
-    {"region_id": "2", "district_id": "3", "district": "East Akim"},
-    {"region_id": "2", "district_id": "4", "district": "West Akim"},
-    {"region_id": "3", "district_id": "5", "district": "Sunyani"},
-    {"region_id": "3", "district_id": "6", "district": "Techiman"},
-    {"region_id": "4", "district_id": "7", "district": "Kumasi Metro"},
-    {"region_id": "4", "district_id": "8", "district": "Obuasi"},
-    {"region_id": "5", "district_id": "9", "district": "Takoradi"},
-    {"region_id": "5", "district_id": "10", "district": "Sekondi"},
-    {"region_id": "6", "district_id": "11", "district": "Tamale Metro"},
-    {"region_id": "6", "district_id": "12", "district": "Savelugu"},
-  ];
+  // Fetch Districts from local database
+  Future<void> fetchDistricts() async {
+    try {
+      final districts = await DatabaseHelper().getAllDistricts();
+      this.districts.clear();
+      this.districts = districts;
+
+      debugPrint('Districts count: ${districts.first.toJson()}');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching districts: $e');
+    }
+  }
+
+  // Fetch Regions from local database
+  Future<void> fetchRegions() async {
+    try {
+      final regions = await DatabaseHelper().getAllRegions();
+      this.regions.clear();
+      this.regions = regions;
+
+      debugPrint('Regions count: ${regions.first.toJson()}');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching regions: $e');
+    }
+  }
 
   // Getters
   String? get selectedRegionId => _selectedRegionId;
+  String? get selectedRegionCode => _selectedRegionCode;
   String? get selectedDistrictId => _selectedDistrictId;
+
+  String? _selectedProjectID;
+  String? get selectedProjectID => _selectedProjectID;
+
+  List<String> projectIDs = [];
+
+  /// Fetch projects from local database
+  Future<void> fetchProjects() async {
+    try {
+      final projects = await DatabaseHelper().getAllProjects();
+
+      projectIDs.clear();
+
+      for (var project in projects) {
+        projectIDs.add(project.code);
+      }
+      // projectIDs = projects;
+
+      debugPrint('Projects count: ${projects.first.toJson()}');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching projects: $e');
+    }
+  }
+
+  /// Form key for validation of the add farm form
+  ///
+  void setSelectedProject(String? val) {
+    _selectedProjectID = val;
+    projectIdController.text = val ?? '';
+    notifyListeners();
+  }
+
 
 
   // Setters
-  void setSelectedRegion(String? regionId) {
+  void setSelectedRegion(String? regionId, ) {
     regionController.text = regionId ?? '';
     _selectedRegionId = regionId;
     notifyListeners();
   }
+  void setSelectedRegionCode(String? regionId, ) {
+    _selectedRegionCode = regionId;
+    notifyListeners();
+  }
+
 
   void setSelectedDistrict(String? districtId) {
     districtController.text = districtId ?? '';
@@ -79,26 +130,25 @@ class AddFarmerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
-
-
   // Get filtered districts based on selected region
-  List<Map<String, dynamic>> getFilteredDistricts() {
-    if (_selectedRegionId == null) return [];
-    return districts.where((district) => district['region_id'] == _selectedRegionId).toList();
-  }
+  // List<Map<String, dynamic>> getFilteredDistricts() {
+  //   if (_selectedRegionId == null) return [];
+  //   return districts.where((district) => district.regionId == _selectedRegionId).toList();
+  // }
 
   // State
 
   int? _farmerId;
   bool _isLoading = false;
+  bool _isLoadingOFFLINE = false;
   String? _errorMessage;
-  
+
   // Getters
   bool get isLoading => _isLoading;
+  bool get isLoadingOffline => _isLoadingOFFLINE;
   String? get errorMessage => _errorMessage;
 
-  
+
   // Image handling
   final ImagePicker mediaPicker = ImagePicker();
   PickedMedia? farmerPhoto;
@@ -108,7 +158,7 @@ class AddFarmerProvider extends ChangeNotifier {
 
   DateTime? get plantingDate => _plantingDate;
   DateTime? get harvestDate => _harvestDate;
-  
+
   // Form key for validation
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
@@ -138,7 +188,7 @@ class AddFarmerProvider extends ChangeNotifier {
         final file = io.File(mediaFile.path);
         final fileSize = await file.length();
         final base64String = await PickedMedia.fileToBase64(file);
-        
+
         farmerPhoto = PickedMedia(
           name: path.basename(mediaFile.path),
           path: mediaFile.path,
@@ -146,7 +196,7 @@ class AddFarmerProvider extends ChangeNotifier {
           file: file,
           base64String: base64String,
         );
-        
+
         notifyListeners();
         debugPrint('Selected image size: ${bytesToSize(fileSize)}');
       }
@@ -156,7 +206,7 @@ class AddFarmerProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   // Clear form
   void clearForm() {
     _farmerId = null;
@@ -165,13 +215,22 @@ class AddFarmerProvider extends ChangeNotifier {
     businessNameController.clear();
     farmerIdNumberController.clear();
     farmerGenderController.clear();
+    communityController.clear();
     farmerDOBController.clear();
+    projectIdController.clear();
     farmerPhoto = null;
     _errorMessage = null;
     formKey.currentState?.reset();
+
+    _farmerId = null;
+    _selectedRegionId = null;
+    _selectedRegionCode = null;
+    _selectedDistrictId = null;
+    _selectedProjectID = null;
+
     notifyListeners();
   }
-    
+
   @override
   void dispose() {
     farmerNameController.dispose();
@@ -198,31 +257,34 @@ class AddFarmerProvider extends ChangeNotifier {
         name: farmerNameController.text,
         idNumber: farmerIdNumberController.text,
         phoneNumber: phoneNumberController.text,
-        photoPath: photoBase64,
+        // photoPath: photoBase64,
         gender: farmerGenderController.text,
         dateOfBirth: farmerDOBController.text,
         regionName: regionController.text,
         districtName: districtController.text,
         community: communityController.text,
-        cropType: cropTypeController.text,
-        varietyBreed: varietyBreedController.text,
-        plantingDate: _plantingDate,
-        plantingDensity: plantingDensityController.text,
-        laborHired: laborHiredController.text,
-        estimatedYield: estimatedYieldController.text,
-        previousYield: yieldInPrevSeason.text,
-        harvestDate: _harvestDate,
+        businessName: businessNameController.text,
+        projectId: selectedProjectID ?? '',
+        // varietyBreed: varietyBreedController.text,
+        // plantingDate: _plantingDate,
+        // plantingDensity: plantingDensityController.text,
+        // laborHired: laborHiredController.text,
+        // estimatedYield: estimatedYieldController.text,
+        // previousYield: yieldInPrevSeason.text,
+        // harvestDate: _harvestDate,
         createdAt: DateTime.now(),
-        isSynced: false,
+        isSynced: SyncStatus.notSynced,
       );
 
       final data = farmer.toMap();
       debugPrint("THE DATA: $data");
 
-      _isLoading = true;
+      _isLoadingOFFLINE = true;
       notifyListeners();
 
-      final result = await dbHelper.insertFarmer(farmer);
+      final farmerData = farmer.toMap();
+
+      final result = await dbHelper.insertFarmer(farmerData);
       if (result > 0) {
         Navigator.pop(context);
         CustomSnackbar.show(
@@ -233,9 +295,11 @@ class AddFarmerProvider extends ChangeNotifier {
         clearForm(); // Clear the form after successful save
       }
 
-      _isLoading = false;
+      _isLoadingOFFLINE = false;
       notifyListeners();
     } catch (e, stackTrace) {
+      _isLoadingOFFLINE = false;
+      notifyListeners();
       debugPrint('Error adding farmer: $e\n$stackTrace');
       CustomSnackbar.show(
         context,
@@ -245,5 +309,101 @@ class AddFarmerProvider extends ChangeNotifier {
 
     }
 
+  }
+
+  submitFarmer(BuildContext context) async {
+      try {
+
+        // Get district name using district code
+        final districtName = districts.firstWhere((district) => district.districtCode == selectedDistrictId).district;
+
+
+      // Convert image to base64 if available
+      String? photoBase64;
+      if (farmerPhoto?.file != null) {
+        photoBase64 = await PickedMedia.fileToBase64(farmerPhoto!.file!);
+      } else if (farmerPhoto?.base64String != null) {
+        photoBase64 = farmerPhoto!.base64String;
+      }
+
+      Farmer farmer = Farmer(
+        name: farmerNameController.text,
+        idNumber: farmerIdNumberController.text,
+        phoneNumber: phoneNumberController.text,
+        // photoPath: photoBase64,
+        gender: farmerGenderController.text,
+        dateOfBirth: farmerDOBController.text,
+        regionName: regionController.text,
+        districtName: districtName,
+        community: communityController.text,
+        projectId: selectedProjectID ?? '',
+        businessName: businessNameController.text,
+        // cropType: cropTypeController.text,
+        // varietyBreed: varietyBreedController.text,
+        // plantingDate: _plantingDate,
+        // plantingDensity: plantingDensityController.text,
+        // laborHired: laborHiredController.text,
+        // estimatedYield: estimatedYieldController.text,
+        // previousYield: yieldInPrevSeason.text,
+        // harvestDate: _harvestDate,
+        createdAt: DateTime.now(),
+        isSynced: SyncStatus.synced,
+      );
+
+      /// init api service
+      final apiService = APIService();
+
+      /// show loading
+      _isLoading = true;
+      notifyListeners();
+
+      await apiService.submitFarmer(farmer).then((response) async {
+        // debugPrint("THE RESPONSE: $response");
+        _isLoading = false;
+        notifyListeners();
+
+        // debugPrint("THE RESPONSE: $response");
+
+        final data = farmer.toMap();
+        data['districtName'] = districtController.text;
+        final result = await dbHelper.insertFarmer(data);
+
+        debugPrint("THE DB ID :::::::::: $result");
+
+        Navigator.pop(context);
+        CustomSnackbar.show(
+          context,
+          message: 'Farmer submitted successfully!',
+          type: SnackbarType.success,
+        );
+        clearForm();
+            }).catchError((error, stackTrace) {
+        _isLoading = false;
+        notifyListeners();
+        debugPrint('Error adding farmer via API: $error');
+        debugPrint('Error adding farmer via API: $stackTrace');
+        CustomSnackbar.show(
+          context,
+          message: 'Error adding farmer: $error',
+          type: SnackbarType.error,
+        );
+      });
+
+      final data = farmer.toJsonOnline();
+      debugPrint("THE DATA: $data");
+      //
+      // _isLoading = true;
+      // notifyListeners();
+
+    } catch (e, stackTrace) {
+        _isLoading = false;
+        notifyListeners();
+      debugPrint('Error adding farmer: $e\n$stackTrace');
+      CustomSnackbar.show(
+        context,
+        message: 'Error adding farmer: $e',
+        type: SnackbarType.error,
+      );
+    }
   }
 }

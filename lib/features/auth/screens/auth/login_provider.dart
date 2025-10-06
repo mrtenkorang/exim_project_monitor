@@ -8,30 +8,72 @@ import '../../../../core/cache_service/cache_service.dart';
 import '../../../../core/models/user_model.dart';
 
 class LoginProvider extends ChangeNotifier {
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  
+  bool _isLoading = false;
+  String? _errorMessage;
+  
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
+  final APIService _apiService = APIService();
+  CacheService? _cacheService;
 
-  final usernameController = TextEditingController();
-  final passwordController = TextEditingController();
+  @override
+  void dispose() {
+    usernameController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
-  APIService apiService = APIService();
+  Future<bool> login() async {
+    if (usernameController.text.isEmpty || passwordController.text.isEmpty) {
+      _errorMessage = 'Please enter both username and password';
+      notifyListeners();
+      return false;
+    }
 
-  Future<bool> login(LoginUser user) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
     try {
-      final response = await apiService.login(user);
+      final user = LoginUser(
+        username: usernameController.text.trim(),
+        password: passwordController.text.trim(),
+      );
 
-      if(response.fullName!.isNotEmpty){
-        await CacheService().saveLoginStatus(true);
-        /// cache user
-        await CacheService().saveUserInfo(response);
-      }
+      final response = await _apiService.login(user);
 
-      debugPrint("THE USER RESPONSE IS :::::::::::: $response");
+      debugPrint("THE LOGIN RES ::::::: $response");
+
+      // Parse the response into a User object
+
+
+      // initialize cache service
+      _cacheService ??= await CacheService.getInstance();
+
+      // Save login status and user data
+      await _cacheService!.saveLoginStatus(true);
+      await _cacheService!.saveUserInfo(response);
+      
+      debugPrint('User logged in successfully: ${response.firstName} ${response.lastName} (${response.staffId})');
       return true;
-    } catch (e) {
+      
+    } catch (e, stackTrace) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      debugPrint('Login error: $_errorMessage');
+      debugPrint('Login error: $stackTrace');
       rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-
-
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
 }

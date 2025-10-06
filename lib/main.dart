@@ -1,3 +1,4 @@
+import 'package:exim_project_monitor/features/auth/screens/auth/login_provider.dart';
 import 'package:exim_project_monitor/features/home/home_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +10,7 @@ import 'features/auth/screens/auth/login_screen.dart';
 import 'features/farm_management/add_farm_provider.dart';
 import 'features/farm_management/edit_farm/edit_farm_provider.dart';
 import 'features/farm_management/history/farm_history_provider.dart';
+import 'features/farmer_management/add_farmer_provider.dart';
 import 'features/farmer_management/edit_farmer/edit_farmer_provider.dart';
 import 'features/farmer_management/history/farmer_history_provider.dart';
 import 'features/farmers/farmer_list_screen.dart';
@@ -42,6 +44,8 @@ void main() async {
   final homeProvider = HomeProvider();
   final editFarmerProvider = EditFarmerProvider();
   final editFarmProvider = EditFarmProvider();
+  final loginProvider = LoginProvider();
+  final addFarmerProvider = AddFarmerProvider();
 
 
   runApp(
@@ -56,6 +60,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => homeProvider),
         ChangeNotifierProvider(create: (_) => editFarmerProvider),
         ChangeNotifierProvider(create: (_) => editFarmProvider),
+        ChangeNotifierProvider(create: (_) => loginProvider),
+        ChangeNotifierProvider(create: (_) => addFarmerProvider),
       ],
       child: const EximProjectMonitorApp(),
     ),

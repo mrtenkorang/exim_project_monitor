@@ -5,7 +5,14 @@ import 'package:flutter/foundation.dart';
 import '../../../core/models/farm_model.dart';
 import '../../../core/models/farmer_model.dart';
 import '../../constants/URLS.dart';
+import '../../constants/constants.dart';
+import '../../models/district_model.dart';
+import '../../models/projects_model.dart';
+import '../../models/region_model.dart';
+import '../../models/server_models/farmers_model/farmers_from_server.dart';
+import '../../models/server_models/secondary_crops_model/secondary_crops_model.dart';
 import '../../models/user_model.dart';
+import '../database/database_helper.dart';
 
 /// API service for handling all network requests related to farms and farmers
 class APIService {
@@ -32,61 +39,100 @@ class APIService {
       errorResponse = jsonDecode(response.body);
     } catch (e) {
       // If response body is not valid JSON, use the raw body
-      errorResponse = {'message': response.body.isNotEmpty ? response.body : 'Unknown error occurred'};
+      errorResponse = {
+        'message': response.body.isNotEmpty
+            ? response.body
+            : 'Unknown error occurred',
+      };
     }
 
     // Extract error message from response
-    final serverMessage = errorResponse?['message'] ?? errorResponse?['error'] ?? errorResponse?['detail'];
+    final serverMessage =
+        errorResponse?['message'] ??
+        errorResponse?['error'] ??
+        errorResponse?['detail'];
 
     switch (statusCode) {
       case 400:
-        errorMessage = serverMessage ?? 'Bad Request: The server could not understand the request due to invalid syntax.';
+        errorMessage =
+            serverMessage ??
+            'Bad Request: The server could not understand the request due to invalid syntax.';
         throw BadRequestException(errorMessage);
       case 401:
-        errorMessage = serverMessage ?? 'Unauthorized: Authentication is required and has failed or not been provided.';
+        errorMessage =
+            serverMessage ??
+            'Unauthorized: Authentication is required and has failed or not been provided.';
         throw UnauthorizedException(errorMessage);
       case 403:
-        errorMessage = serverMessage ?? 'Forbidden: You do not have permission to access this resource.';
+        errorMessage =
+            serverMessage ??
+            'Forbidden: You do not have permission to access this resource.';
         throw ForbiddenException(errorMessage);
       case 404:
-        errorMessage = serverMessage ?? 'Not Found: The requested resource could not be found on the server.';
+        errorMessage =
+            serverMessage ??
+            'Not Found: The requested resource could not be found on the server.';
         throw NotFoundException(errorMessage);
       case 405:
-        errorMessage = serverMessage ?? 'Method Not Allowed: The request method is not supported for the requested resource.';
+        errorMessage =
+            serverMessage ??
+            'Method Not Allowed: The request method is not supported for the requested resource.';
         throw MethodNotAllowedException(errorMessage);
       case 408:
-        errorMessage = serverMessage ?? 'Request Timeout: The server timed out waiting for the request.';
+        errorMessage =
+            serverMessage ??
+            'Request Timeout: The server timed out waiting for the request.';
         throw RequestTimeoutException(errorMessage);
       case 409:
-        errorMessage = serverMessage ?? 'Conflict: The request could not be completed due to a conflict with the current state of the resource.';
+        errorMessage =
+            serverMessage ??
+            'Conflict: The request could not be completed due to a conflict with the current state of the resource.';
         throw ConflictException(errorMessage);
       case 422:
-        errorMessage = serverMessage ?? 'Unprocessable Entity: The request was well-formed but unable to be followed due to semantic errors.';
+        errorMessage =
+            serverMessage ??
+            'Unprocessable Entity: The request was well-formed but unable to be followed due to semantic errors.';
         throw UnprocessableEntityException(errorMessage);
       case 429:
-        errorMessage = serverMessage ?? 'Too Many Requests: You have sent too many requests in a given amount of time.';
+        errorMessage =
+            serverMessage ??
+            'Too Many Requests: You have sent too many requests in a given amount of time.';
         throw RateLimitException(errorMessage);
       case 500:
-        errorMessage = serverMessage ?? 'Internal Server Error: The server encountered an unexpected condition.';
+        errorMessage =
+            serverMessage ??
+            'Internal Server Error: The server encountered an unexpected condition.';
         throw ServerException(errorMessage);
       case 502:
-        errorMessage = serverMessage ?? 'Bad Gateway: The server received an invalid response from the upstream server.';
+        errorMessage =
+            serverMessage ??
+            'Bad Gateway: The server received an invalid response from the upstream server.';
         throw BadGatewayException(errorMessage);
       case 503:
-        errorMessage = serverMessage ?? 'Service Unavailable: The server is currently unavailable (overloaded or down for maintenance).';
+        errorMessage =
+            serverMessage ??
+            'Service Unavailable: The server is currently unavailable (overloaded or down for maintenance).';
         throw ServiceUnavailableException(errorMessage);
       case 504:
-        errorMessage = serverMessage ?? 'Gateway Timeout: The server did not receive a timely response from the upstream server.';
+        errorMessage =
+            serverMessage ??
+            'Gateway Timeout: The server did not receive a timely response from the upstream server.';
         throw GatewayTimeoutException(errorMessage);
       default:
         if (statusCode >= 400 && statusCode < 500) {
-          errorMessage = serverMessage ?? 'Client Error: An error occurred on the client side (Status code: $statusCode).';
+          errorMessage =
+              serverMessage ??
+              'Client Error: An error occurred on the client side (Status code: $statusCode).';
           throw ClientException(errorMessage, statusCode);
         } else if (statusCode >= 500) {
-          errorMessage = serverMessage ?? 'Server Error: An error occurred on the server side (Status code: $statusCode).';
+          errorMessage =
+              serverMessage ??
+              'Server Error: An error occurred on the server side (Status code: $statusCode).';
           throw ServerException(errorMessage);
         } else {
-          errorMessage = serverMessage ?? 'Unexpected error occurred (Status code: $statusCode).';
+          errorMessage =
+              serverMessage ??
+              'Unexpected error occurred (Status code: $statusCode).';
           throw ApiException(errorMessage, statusCode);
         }
     }
@@ -94,11 +140,11 @@ class APIService {
 
   /// Generic method for handling API requests
   Future<Map<String, dynamic>> _makeRequest(
-      String method,
-      Uri url, {
-        Map<String, dynamic>? body,
-        Map<String, String>? additionalHeaders,
-      }) async {
+    String method,
+    Uri url, {
+    Map<String, dynamic>? body,
+    Map<String, String>? additionalHeaders,
+  }) async {
     try {
       final headers = {..._headers, ...?additionalHeaders};
 
@@ -109,7 +155,9 @@ class APIService {
           headers: headers,
           body: body != null ? jsonEncode(body) : null,
         ),
-        _ => throw UnsupportedMethodException('HTTP method $method is not supported'),
+        _ => throw UnsupportedMethodException(
+          'HTTP method $method is not supported',
+        ),
       };
 
       if (response.statusCode >= 400) {
@@ -157,9 +205,7 @@ class APIService {
       queryParams['projectId'] = projectId;
     }
 
-    final url = Uri.parse(URL.farms).replace(
-      queryParameters: queryParams,
-    );
+    final url = Uri.parse(URL.farms).replace(queryParameters: queryParams);
 
     final responseData = await _makeRequest('GET', url);
     return (responseData['data'] as List)
@@ -186,9 +232,9 @@ class APIService {
     final responseData = await _makeRequest(
       'POST',
       Uri.parse(URL.farmers),
-      body: farmer.toMap(),
+      body: farmer.toJsonOnline(),
     );
-    return Farmer.fromMap(responseData['data']);
+    return Farmer.fromMapOnline(responseData['data']);
   }
 
   /// Fetches a list of all farmers from the server
@@ -199,9 +245,7 @@ class APIService {
       queryParams['projectId'] = projectId;
     }
 
-    final url = Uri.parse(URL.farmers).replace(
-      queryParameters: queryParams,
-    );
+    final url = Uri.parse(URL.farmers).replace(queryParameters: queryParams);
 
     final responseData = await _makeRequest('GET', url);
     return (responseData['data'] as List)
@@ -222,10 +266,137 @@ class APIService {
   Future<User> login(LoginUser user) async {
     final responseData = await _makeRequest(
       'POST',
-      Uri.parse('${URL.baseUrl}/login'),
+      Uri.parse(URL.login),
       body: user.loginMap(),
     );
-    return User.fromMap(responseData['data']['user_profile']);
+
+    final baseData = responseData["data"]["user_profile"];
+    final userData = baseData["user"];
+    final districtData = baseData["district_details"];
+
+    final userr = User(
+      firstName: userData["first_name"],
+      lastName: userData["last_name"],
+      userName: userData["username"],
+      staffId: baseData["staff_id"],
+      districtName: districtData["district"],
+      districtCode: districtData["district_code"],
+      districtId: districtData["id"],
+      regionName: districtData["region"],
+      regionCode: districtData["reg_code"],
+    );
+
+    debugPrint("THE LOGIN DATA ::::::::::::::: ${userr.toJson()}");
+    return User.fromJson(userr.toJson());
+  }
+
+  /// Fetch and save all districts
+  Future<dynamic> fetchAndSaveDistricts() async {
+    debugPrint("Fetching districts...");
+    final responseData = await _makeRequest('GET', Uri.parse(URL.districts));
+    final districts = (responseData['data'] as List)
+        .map((districtJson) => District.fromJson(districtJson))
+        .toList();
+
+    debugPrint("Districts count: ${districts.first.toJson()}");
+    await DatabaseHelper().deleteAllDistricts();
+    await DatabaseHelper().bulkInsertDistricts(districts);
+  }
+
+  // fetch farmers from server
+  Future<dynamic> fetchFarmersFromServer() async {
+    debugPrint("Fetching farmers from server...");
+    final responseData = await _makeRequest('GET', Uri.parse(URL.farmers));
+
+    final data = responseData["data"];
+    final dataFarms = responseData["data"]["farms"];
+    final secCrop = responseData["data"]["secondary_crops"];
+
+    debugPrint("THE FARMER RES DATA SEC CROP::::::::::: $secCrop");
+    final secondaryCrops = (data as List)
+        .map((farmerJson) => SecondaryCropModel.fromJson(farmerJson))
+        .toList();
+
+    final farmers = (data)
+        .map((farmerJson) => Farmer.fromMap(farmerJson))
+        .toList();
+
+    final farms = (dataFarms as List)
+        .map((farmJson) => Farm.fromMap(farmJson))
+        .toList();
+
+    debugPrint("THE FARMER RES DATA ::::::::::: $responseData");
+
+  }
+
+  /// Fetch and save all projects
+  Future<dynamic> fetchAndSaveProjects() async {
+    debugPrint("Fetching projects...");
+    final responseData = await _makeRequest('GET', Uri.parse(URL.projects));
+    final projects = (responseData['data'] as List)
+        .map((projectJson) => Project.fromJson(projectJson))
+        .toList();
+
+    debugPrint("Projects count: ${projects.first.toJson()}");
+    await DatabaseHelper().deleteAllProjects();
+    await DatabaseHelper().bulkInsertProjects(projects);
+  }
+
+  /// Fetch and save all regions
+  Future<dynamic> fetchAndSaveRegions() async {
+    debugPrint("Fetching regions...");
+    final responseData = await _makeRequest('GET', Uri.parse(URL.regions));
+    final regions = (responseData['data'] as List)
+        .map((regionJson) => Region.fromJson(regionJson))
+        .toList();
+
+    debugPrint("Districts count: ${regions.first.toJson()}");
+    await DatabaseHelper().deleteAllRegions();
+    await DatabaseHelper().bulkInsertRegions(regions);
+  }
+
+  /// Check the current app version against the server
+  /// Returns a map containing version check status and data
+  Future<Map<String, dynamic>> checkAppVersion() async {
+    // final data = {
+    //   "version": const String.fromEnvironment('VERSION_NAME', defaultValue: '1.0.0'),
+    // };
+
+    final data = {
+      "version": Constants.buildNumber,
+    };
+
+    try {
+      debugPrint("Checking app version with data: $data");
+      
+      final response = await _makeRequest(
+        'POST',
+        Uri.parse(URL.checkAppVersion),
+        body: data,
+        additionalHeaders: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      debugPrint("Version check response: $response");
+      
+      // Return the response with success status
+      return {
+        'success': true,
+        'status': response['status'] ?? false,
+        'message': response['message'] ?? 'Version check successful',
+        'data': response['data']
+      };
+    } catch (e) {
+      debugPrint("Error in checkAppVersion: $e");
+      // On error, continue with sync
+      return {
+        'success': false,
+        'status': true, // Continue with sync on error
+        'message': 'Version check error but continuing',
+        'data': null,
+      };
+    }
   }
 
   /// Close the HTTP client when done
@@ -233,6 +404,9 @@ class APIService {
     _client.close();
   }
 }
+
+
+
 
 // ====================================
 // CUSTOM EXCEPTION CLASSES
@@ -246,7 +420,8 @@ class ApiException implements Exception {
   ApiException(this.message, [this.statusCode]);
 
   @override
-  String toString() => 'ApiException: $message${statusCode != null ? ' (Status: $statusCode)' : ''}';
+  String toString() =>
+      'ApiException: $message${statusCode != null ? ' (Status: $statusCode)' : ''}';
 }
 
 /// 400 Bad Request

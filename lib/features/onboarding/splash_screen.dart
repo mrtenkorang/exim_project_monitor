@@ -1,3 +1,5 @@
+import 'package:exim_project_monitor/features/screen_wrapper/screen_wrapper.dart';
+import 'package:exim_project_monitor/features/sync/sync_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,14 +25,14 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(seconds: 2));
     
     final prefs = await SharedPreferences.getInstance();
-    final bool isFirstLaunch = prefs.getBool('is_first_launch') ?? true;
+    final bool isFirstLaunch = prefs.getBool('isLoggedIn') ?? false;
 
     if (!mounted) return;
     
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => isFirstLaunch 
-            ? const LoginScreen()
+            ? const SyncPage()
             : const LoginScreen(),
       ),
     );

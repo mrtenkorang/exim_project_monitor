@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/cupertino.dart';
 
+import '../../../core/constants/constants.dart';
 import '../../../core/models/farmer_model.dart';
+import '../../../widgets/custom_snackbar.dart';
 import 'farmer_history_provider.dart';
 import 'farmer_detail_screen.dart';
 import '../add_farmer.dart';
@@ -189,7 +191,7 @@ class FarmerList extends StatelessWidget {
           ListTile(
             contentPadding: const EdgeInsets.all(16),
             title: Text(
-              farmer.name ?? 'Unnamed Farmer',
+              farmer.name,
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -209,13 +211,13 @@ class FarmerList extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Status: ${farmer.isSynced}',
-                  style: TextStyle(
-                    color: _getStatusColor(farmer.isSynced, context),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                // Text(
+                //   'Status: ${farmer.isSynced}',
+                //   style: TextStyle(
+                //     color: _getStatusColor(farmer.isSynced, context),
+                //     fontWeight: FontWeight.w500,
+                //   ),
+                // ),
               ],
             ),
             trailing: Row(
@@ -227,7 +229,7 @@ class FarmerList extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => EditFarmerScreen(farmer: farmer),
+                        builder: (context) => EditFarmerScreen(farmer: farmer, isSynced: farmer.isSynced==SyncStatus.synced),
                       ),
                     );
                   },
@@ -255,13 +257,14 @@ class FarmerList extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(bool status, BuildContext context) {
+  Color _getStatusColor(int status, BuildContext context) {
     switch (status) {
-      case true:
+      case 1:
         return Theme.of(context).colorScheme.primary;
-      case false:
+      case 0:
         return Theme.of(context).colorScheme.error;
       }
+      return Colors.grey;
   }
 
   void _showDeleteDialog(BuildContext context, FarmerHistoryProvider provider, Farmer farmer) {
@@ -278,10 +281,15 @@ class FarmerList extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                // provider.deleteFarmer(farmer['id']);
+                provider.deleteFarmer(farmer.id!);
+
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Farmer deleted successfully')),
+                Navigator.of(context).pop();
+
+                CustomSnackbar.show(
+                  context,
+                  message: 'Farmer deleted successfully!',
+                  type: SnackbarType.success,
                 );
               },
               style: TextButton.styleFrom(

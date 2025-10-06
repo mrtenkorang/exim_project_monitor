@@ -1,3 +1,6 @@
+import 'package:exim_project_monitor/features/screen_wrapper/screen_wrapper.dart';
+import 'package:exim_project_monitor/features/sync/sync_page.dart';
+import 'package:exim_project_monitor/widgets/custom_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -20,7 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loginProvider = context.watch<LoginProvider>();
-    
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -56,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 48),
-                  
+
                   // Login Form
                   Container(
                     decoration: BoxDecoration(
@@ -77,11 +80,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 padding: const EdgeInsets.only(bottom: 16.0),
                                 child: Text(
                                   _errorMessage!,
-                                  style: TextStyle(color: theme.colorScheme.error),
+                                  style: TextStyle(
+                                    color: theme.colorScheme.error,
+                                  ),
                                   textAlign: TextAlign.center,
                                 ),
                               ),
-                            
+
                             // Username Field
                             TextFormField(
                               controller: loginProvider.usernameController,
@@ -100,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                             ),
                             const SizedBox(height: 16),
-                            
+
                             // Password Field
                             TextFormField(
                               controller: loginProvider.passwordController,
@@ -135,12 +140,55 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                             ),
                             const SizedBox(height: 24),
-                            
+
                             // Login Button
                             FilledButton(
-                              onPressed: () => loginProvider.login,
+                              onPressed: _isLoading
+                                  ? null
+                                  : () async {
+                                      if (_formKey.currentState!.validate()) {
+                                        setState(() {
+                                          _isLoading = true;
+                                          _errorMessage = null;
+                                        });
+                                        try {
+                                          final success = await loginProvider
+                                              .login();
+                                          if (success && mounted) {
+                                            CustomSnackbar.show(
+                                              context,
+                                              message: "Login successful",
+                                              type: SnackbarType.success,
+                                            );
+
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) {
+                                                  return const SyncPage();
+                                                },
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          setState(() {
+                                            _errorMessage = e
+                                                .toString()
+                                                .replaceAll('Exception: ', '');
+                                          });
+                                        } finally {
+                                          if (mounted) {
+                                            setState(() {
+                                              _isLoading = false;
+                                            });
+                                          }
+                                        }
+                                      }
+                                    },
                               style: FilledButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -156,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     )
                                   : const Text('LOGIN'),
                             ),
-                            
+
                             // Forgot Password & Help
                             const SizedBox(height: 16),
                             Row(
@@ -164,17 +212,17 @@ class _LoginScreenState extends State<LoginScreen> {
                               children: [
                                 TextButton(
                                   onPressed: () {
-
                                     // TODO: Implement forgot password
                                   },
                                   child: const Text('Forgot Password?'),
                                 ),
-                                TextButton(
-                                  onPressed: () {
-                                    // TODO: Show help dialog
-                                  },
-                                  child: const Text('Need Help?'),
-                                ),
+                                Container(),
+                                // TextButton(
+                                //   onPressed: () {
+                                //     // TODO: Show help dialog
+                                //   },
+                                //   child: const Text('Need Help?'),
+                                // ),
                               ],
                             ),
                           ],
@@ -182,16 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  
-                  // Offline Mode Button
-                  // const SizedBox(height: 16),
-                  // OutlinedButton(
-                  //   onPressed: () {
-                  //     // TODO: Implement offline mode
-                  //   },
-                  //   child: const Text('Continue Offline'),
-                  // ),
-                  
+
                   // Version Info
                   const SizedBox(height: 32),
                   Text(

@@ -67,18 +67,18 @@ class AddFarmProvider with ChangeNotifier {
   final TextEditingController followUpStatusController =
       TextEditingController();
 
-  String? _selectedProjectID;
-  String? get selectedProjectID => _selectedProjectID;
-
-  final List<String> projectIDs = ["Project 1", "Project 2", "Project 3"];
-
-  /// Form key for validation of the add farm form
-  ///
-  void setSelectedProject(String? val) {
-    _selectedProjectID = val;
-    projectIdController.text = val ?? '';
-    notifyListeners();
-  }
+  // String? _selectedProjectID;
+  // String? get selectedProjectID => _selectedProjectID;
+  //
+  // final List<String> projectIDs = ["Project 1", "Project 2", "Project 3"];
+  //
+  // /// Form key for validation of the add farm form
+  // ///
+  // void setSelectedProject(String? val) {
+  //   _selectedProjectID = val;
+  //   projectIdController.text = val ?? '';
+  //   notifyListeners();
+  // }
 
   @override
   void dispose() {

@@ -30,7 +30,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 20),
-                    _buildProjectIDDropdown(farmProvider),
+                    // _buildProjectIDDropdown(farmProvider),
                     _buildTitleAndField(
                       "Visit ID / Reference Number",
                       farmProvider.visitIdController,
@@ -246,40 +246,40 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
   }
 
 
-  Widget _buildProjectIDDropdown(AddFarmProvider farmProvider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Project ID"),
-        const SizedBox(height: 5),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            border: Border.all(color: Colors.grey.withOpacity(0.5)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: DropdownButton<String>(
-            dropdownColor: Theme.of(context).colorScheme.surface,
-            value: farmProvider.projectIDs.contains(farmProvider.selectedProjectID) 
-                ? farmProvider.selectedProjectID 
-                : null,
-            onChanged: (String? newValue) {
-              farmProvider.setSelectedProject(newValue);
-            },
-            items: farmProvider.projectIDs.map<DropdownMenuItem<String>>((String region) {
-              return DropdownMenuItem<String>(
-                value: region,
-                child: Text(region),
-              );
-            }).toList(),
-            isExpanded: true,
-            underline: const SizedBox(),
-            hint: const Text('Select project id', style: TextStyle(color: Colors.grey),),
-          ),
-        ),
-        const SizedBox(height: 10),
-      ],
-    );
-  }
+  // Widget _buildProjectIDDropdown(AddFarmProvider farmProvider) {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const Text("Project ID"),
+  //       const SizedBox(height: 5),
+  //       Container(
+  //         padding: const EdgeInsets.symmetric(horizontal: 12),
+  //         decoration: BoxDecoration(
+  //           color: Theme.of(context).colorScheme.surface,
+  //           border: Border.all(color: Colors.grey.withOpacity(0.5)),
+  //           borderRadius: BorderRadius.circular(8),
+  //         ),
+  //         child: DropdownButton<String>(
+  //           dropdownColor: Theme.of(context).colorScheme.surface,
+  //           value: farmProvider.projectIDs.contains(farmProvider.selectedProjectID)
+  //               ? farmProvider.selectedProjectID
+  //               : null,
+  //           onChanged: (String? newValue) {
+  //             farmProvider.setSelectedProject(newValue);
+  //           },
+  //           items: farmProvider.projectIDs.map<DropdownMenuItem<String>>((String region) {
+  //             return DropdownMenuItem<String>(
+  //               value: region,
+  //               child: Text(region),
+  //             );
+  //           }).toList(),
+  //           isExpanded: true,
+  //           underline: const SizedBox(),
+  //           hint: const Text('Select project id', style: TextStyle(color: Colors.grey),),
+  //         ),
+  //       ),
+  //       const SizedBox(height: 10),
+  //     ],
+  //   );
+  // }
 }

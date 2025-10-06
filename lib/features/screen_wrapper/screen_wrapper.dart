@@ -1,9 +1,9 @@
+import 'package:exim_project_monitor/core/cache_service/cache_service.dart';
 import 'package:exim_project_monitor/features/home/home.dart';
 import 'package:exim_project_monitor/features/spatial/spatial.dart';
 import 'package:flutter/material.dart';
 
-import '../../core/models/custom_user.dart';
-import '../../core/services/cache_service.dart';
+import '../../core/models/user_model.dart';
 import '../farmers/farmer_list_screen.dart';
 
 class ScreenWrapper extends StatefulWidget {
@@ -52,14 +52,13 @@ class _ScreenWrapperState extends State<ScreenWrapper> {
     return true;
   }
 
-  CmUser? _userInfo;
+  User? _userInfo;
 
-  getUserInfo(){
-    final cacheService = CacheService();
-    cacheService.getUserInfo().then((value) {
-      setState(() {
-        _userInfo = value;
-      });
+  Future<void> getUserInfo() async {
+    final cacheService = await CacheService.getInstance();
+    final value = await cacheService.getUserInfo();
+    setState(() {
+      _userInfo = value;
     });
   }
 
@@ -75,7 +74,7 @@ class _ScreenWrapperState extends State<ScreenWrapper> {
     final colorScheme = theme.colorScheme;
 
     final List<Widget> pages = [
-      Home(userInfo: _userInfo),
+      const Home(),
       const FarmerListScreen(),
       const EarthEngineMap(),
       // const ProfileScreen(),

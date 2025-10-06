@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:exim_project_monitor/core/models/user_model.dart';
 import 'package:exim_project_monitor/core/providers/theme_provider.dart';
 
+import '../../../core/cache_service/cache_service.dart';
+
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
@@ -12,16 +14,18 @@ class ProfileScreen extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     var user;
-    
+
     // If user is null, create a default user
     user ??= User(
-      id: 1,
-      email: 'guest@example.com',
-      fullName: 'Guest User',
-      role: 'guest',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(), userId: 1,
+      firstName: 'test',
+      lastName: 'test',
+      userName: 'test',
+      staffId: 'test',
+      districtName: 'test',
+      districtCode: 'test',
+      districtId: 1,
+      regionName: 'test',
+      regionCode: 'test',
     );
 
     return Scaffold(
@@ -45,10 +49,7 @@ class ProfileScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: colorScheme.primary.withOpacity(0.1),
-                      border: Border.all(
-                        color: colorScheme.primary,
-                        width: 2,
-                      ),
+                      border: Border.all(color: colorScheme.primary, width: 2),
                     ),
                     child: Icon(
                       Icons.person,
@@ -58,25 +59,25 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    user.fullName ?? 'Guest User',
+                    user.firstName ?? 'Guest User',
                     style: textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   ...{
-                  const SizedBox(height: 4),
-                  Text(
-                    user.email,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                },
+                    const SizedBox(height: 4),
+                    // Text(
+                    //   user.email,
+                    //   style: textTheme.bodyMedium?.copyWith(
+                    //     color: colorScheme.onSurfaceVariant,
+                    //   ),
+                    // ),
+                  },
                 ],
               ),
             ),
             const SizedBox(height: 32),
-            
+
             // Account Section
             _buildSectionHeader('Account', context),
             _buildListTile(
@@ -96,7 +97,7 @@ class ProfileScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 24),
-            
+
             // Preferences Section
             _buildSectionHeader('Preferences', context),
             Consumer<ThemeProvider>(
@@ -126,7 +127,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Support Section
             _buildSectionHeader('Support', context),
             _buildListTile(
@@ -154,13 +155,18 @@ class ProfileScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 24),
-            
+
             // Logout Button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
               child: FilledButton.icon(
-                onPressed: () {
-                  // TODO: Implement logout
+                onPressed: ()  async {
+                  final CacheService cacheService = await CacheService.getInstance();
+                  await cacheService.logout(context);
+
                 },
                 icon: const Icon(Icons.logout),
                 label: const Text('Logout'),
@@ -175,7 +181,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // App Version
             Center(
               child: Text(
@@ -197,10 +203,10 @@ class ProfileScreen extends StatelessWidget {
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-            ),
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.0,
+        ),
       ),
     );
   }
@@ -213,7 +219,7 @@ class ProfileScreen extends StatelessWidget {
     VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4.0),
       decoration: BoxDecoration(
@@ -226,20 +232,12 @@ class ProfileScreen extends StatelessWidget {
       ),
 
       child: ListTile(
-        leading: Icon(
-          icon,
-          color: theme.colorScheme.primary,
-        ),
-        title: Text(
-          title,
-          style: theme.textTheme.bodyLarge,
-        ),
+        leading: Icon(icon, color: theme.colorScheme.primary),
+        title: Text(title, style: theme.textTheme.bodyLarge),
         trailing: trailing ?? const Icon(Icons.chevron_right),
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
