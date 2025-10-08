@@ -1,10 +1,13 @@
 // ignore_for_file: prefer_typing_uninitialized_variables, use_build_context_synchronously, avoid_print
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 import 'dart:ui';
 import 'package:exim_project_monitor/features/farm_management/polygon_drawing_tool/polygon_drawing_tool.dart';
 import 'package:exim_project_monitor/features/farm_management/polygon_drawing_tool/utils/double_value_trimmer.dart';
+import 'package:exim_project_monitor/widgets/custom_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
@@ -17,7 +20,6 @@ import 'package:geolocator/geolocator.dart' as gl;
 /// Provider class for managing farm addition operations
 /// Handles location services, polygon drawing, farm validation, and data persistence
 class AddFarmProvider with ChangeNotifier {
-  // Database instance
   // ==================================================================================
   // PROPERTIES & DEPENDENCIES
   // ==================================================================================
@@ -25,17 +27,49 @@ class AddFarmProvider with ChangeNotifier {
   /// Build context for the add farm screen - used for dialogs and navigation
   late BuildContext addFarmScreenContext;
 
+
+
   final _databaseHelper = DatabaseHelper();
+
+  // Date properties
   DateTime? _harvestDate;
+  DateTime? _plantingDate;
+  DateTime? _visitDate;
+  bool _hasFarmBoundaryPolygon = false;
 
+  // Getters
   DateTime? get harvestDate => _harvestDate;
+  DateTime? get plantingDate => _plantingDate;
+  DateTime? get visitDate => _visitDate;
+  bool get hasFarmBoundaryPolygon => _hasFarmBoundaryPolygon;
 
+  // Setters
   void setHarvestDate(DateTime? date) {
     _harvestDate = date;
     notifyListeners();
   }
 
-  // Controllers
+  void setPlantingDate(DateTime? date) {
+    _plantingDate = date;
+    notifyListeners();
+  }
+
+  void setVisitDate(DateTime? date) {
+    _visitDate = date;
+    notifyListeners();
+  }
+
+  void setFarmBoundaryPolygon(bool value) {
+    _hasFarmBoundaryPolygon = value;
+    farmBoundaryPolygonController.text = value ? 'Yes' : 'No';
+    notifyListeners();
+  }
+
+  // ==================================================================================
+  // FORM CONTROLLERS
+  // ==================================================================================
+
+  // Original Controllers
   final TextEditingController farmLocationController = TextEditingController();
   final TextEditingController projectIdController = TextEditingController();
   final TextEditingController farmSizeController = TextEditingController();
@@ -67,26 +101,28 @@ class AddFarmProvider with ChangeNotifier {
   final TextEditingController followUpStatusController =
       TextEditingController();
 
-  // String? _selectedProjectID;
-  // String? get selectedProjectID => _selectedProjectID;
-  //
-  // final List<String> projectIDs = ["Project 1", "Project 2", "Project 3"];
-  //
-  // /// Form key for validation of the add farm form
-  // ///
-  // void setSelectedProject(String? val) {
-  //   _selectedProjectID = val;
-  //   projectIdController.text = val ?? '';
-  //   notifyListeners();
-  // }
+  // New Controllers for Added Fields
+  final TextEditingController latitudeController = TextEditingController();
+  final TextEditingController longitudeController = TextEditingController();
+  final TextEditingController cropTypeController = TextEditingController();
+  final TextEditingController varietyBreedController = TextEditingController();
+  final TextEditingController plantingDensityController =
+      TextEditingController();
+  final TextEditingController labourHiredController = TextEditingController();
+  final TextEditingController maleWorkersController = TextEditingController();
+  final TextEditingController femaleWorkersController = TextEditingController();
+  final TextEditingController estimatedYieldController =
+      TextEditingController();
+  final TextEditingController previousYieldController = TextEditingController();
 
   @override
   void dispose() {
+    // Dispose all original controllers
     farmLocationController.dispose();
     projectIdController.dispose();
     farmSizeController.dispose();
-    // visitIdController.dispose();
-    // dateOfVisitController.dispose();
+    visitIdController.dispose();
+    dateOfVisitController.dispose();
     mainBuyersController.dispose();
     farmBoundaryPolygonController.dispose();
     landUseClassificationController.dispose();
@@ -102,18 +138,25 @@ class AddFarmProvider with ChangeNotifier {
     infrastructureIdentifiedController.dispose();
     recommendedActionsController.dispose();
     followUpStatusController.dispose();
+
+    // Dispose new controllers
+    latitudeController.dispose();
+    longitudeController.dispose();
+    cropTypeController.dispose();
+    varietyBreedController.dispose();
+    plantingDensityController.dispose();
+    labourHiredController.dispose();
+    maleWorkersController.dispose();
+    femaleWorkersController.dispose();
+    estimatedYieldController.dispose();
+    previousYieldController.dispose();
+
     super.dispose();
   }
 
   final addFarmFormKey = GlobalKey<FormState>();
 
   // Services
-  // Globals globals = Globals();
-  // FarmerApiInterface farmerApiInterface = FarmerApiInterface();
-  // GeneralCocoaRehabApiInterface generalCocoaRehabApiInterface =
-  // GeneralCocoaRehabApiInterface();
-
-  /// Date formatter for consistent date formatting across the app
   DateFormat dateFormat = DateFormat('yyyy-MM-dd');
 
   // ==================================================================================
@@ -136,24 +179,6 @@ class AddFarmProvider with ChangeNotifier {
     _isInitialLoad = value;
     notifyListeners();
   }
-
-  // ==================================================================================
-  // DATA MODELS
-  // ==================================================================================
-
-  /// Society information for the farm being added
-  // Society? society = Society();
-  //
-  // /// Farmer information retrieved from server
-  // FarmerFromServer? farmerFromServer = FarmerFromServer();
-  //
-  // /// Currently selected farm from assigned farms list
-  // AssignedFarm? _selectedFarm = AssignedFarm();
-  // AssignedFarm? get selectedFarm => _selectedFarm;
-  // set selectedFarm(AssignedFarm? value) {
-  //   _selectedFarm = value;
-  //   notifyListeners();
-  // }
 
   // ==================================================================================
   // MAP & POLYGON RELATED PROPERTIES
@@ -215,6 +240,142 @@ class AddFarmProvider with ChangeNotifier {
   }
 
   // ==================================================================================
+  // LOCATION PERMISSION & COORDINATES ACCESS
+  // ==================================================================================
+
+  /// Requests location permission and returns the status
+  Future<gl.LocationPermission> requestLocationPermission() async {
+    try {
+      gl.LocationPermission permission = await gl.Geolocator.checkPermission();
+
+      if (permission == gl.LocationPermission.denied) {
+        permission = await gl.Geolocator.requestPermission();
+      }
+
+      return permission;
+    } catch (e) {
+      debugPrint('Error requesting location permission: $e');
+      return gl.LocationPermission.denied;
+    }
+  }
+
+  /// Checks if location permission is granted
+  Future<bool> hasLocationPermission() async {
+    try {
+      gl.LocationPermission permission = await gl.Geolocator.checkPermission();
+      return permission == gl.LocationPermission.whileInUse ||
+          permission == gl.LocationPermission.always;
+    } catch (e) {
+      debugPrint('Error checking location permission: $e');
+      return false;
+    }
+  }
+
+  /// Gets current coordinates and updates the controllers
+  Future<bool> getCurrentCoordinates() async {
+    try {
+      // Check and request permission
+      final permission = await requestLocationPermission();
+
+      if (permission != gl.LocationPermission.whileInUse &&
+          permission != gl.LocationPermission.always) {
+        debugPrint('Location permission not granted');
+        if (addFarmScreenContext.mounted) {
+          CustomSnackbar.show(
+            addFarmScreenContext,
+            message: "Location permission required",
+            type: SnackbarType.error,
+          );
+        }
+        return false;
+      }
+
+      // Check if location services are enabled
+      bool serviceEnabled = await gl.Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('Location services are disabled');
+        if (addFarmScreenContext.mounted) {
+          if (addFarmScreenContext.mounted) {
+            CustomSnackbar.show(
+              addFarmScreenContext,
+              message: "Enable location to continue",
+              type: SnackbarType.error,
+            );
+          }
+        }
+        return false;
+      }
+
+      // Show loading indicator
+      if (addFarmScreenContext.mounted) {
+        Globals().startWait(addFarmScreenContext);
+      }
+
+      // Get current position
+      gl.Position position = await gl.Geolocator.getCurrentPosition(
+        desiredAccuracy: gl.LocationAccuracy.best,
+      );
+
+      // Update controllers with coordinates
+      latitudeController.text = position.latitude.toStringAsFixed(6);
+      longitudeController.text = position.longitude.toStringAsFixed(6);
+
+      // Update location data
+      locationData = LocationData.fromMap({
+        'latitude': position.latitude,
+        'longitude': position.longitude,
+        'accuracy': position.accuracy,
+      });
+
+      debugPrint(
+        'Coordinates obtained: ${position.latitude}, ${position.longitude}',
+      );
+
+      // Hide loading indicator
+      if (addFarmScreenContext.mounted) {
+        Globals().endWait(addFarmScreenContext);
+      }
+
+      if (addFarmScreenContext.mounted) {
+        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
+          const SnackBar(content: Text('Coordinates obtained successfully')),
+        );
+      }
+
+      return true;
+    } catch (e) {
+      debugPrint('Error getting current coordinates: $e');
+
+      // Hide loading indicator
+      if (addFarmScreenContext.mounted) {
+        Globals().endWait(addFarmScreenContext);
+      }
+
+      if (addFarmScreenContext.mounted) {
+        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
+          SnackBar(content: Text('Error getting location: ${e.toString()}')),
+        );
+      }
+      return false;
+    }
+  }
+
+  /// Auto-fill coordinates when the user focuses on coordinate fields
+  void autoFillCoordinates() async {
+    if (latitudeController.text.isEmpty || longitudeController.text.isEmpty) {
+      final success = await getCurrentCoordinates();
+
+      if (success) {
+        debugPrint(
+          "Coordinates auto-filled: ${latitudeController.text}, ${longitudeController.text}",
+        );
+      } else {
+        debugPrint("Failed to auto-fill coordinates");
+      }
+    }
+  }
+
+  // ==================================================================================
   // INITIALIZATION & LIFECYCLE
   // ==================================================================================
 
@@ -228,12 +389,13 @@ class AddFarmProvider with ChangeNotifier {
     // Show loading indicator while fetching farm data
     Globals().startWait(addFarmScreenContext);
 
-    // Load existing farms in the area for overlap detection
-    // await loadFarms(locationData!);
-
     // Hide loading indicator
     Globals().endWait(addFarmScreenContext);
   }
+
+  // ==================================================================================
+  // FARM OPERATIONS
+  // ==================================================================================
 
   /// Saves the farm data to the local database
   Future<bool> saveFarm() async {
@@ -242,18 +404,26 @@ class AddFarmProvider with ChangeNotifier {
 
     debugPrint('Form is valid. Saving farm...');
     try {
-      // Get polygon data from the controller or use empty array if not set
-      String polygonData = farmBoundaryPolygonController.text.trim();
-      if (polygonData.isEmpty) {
-        polygonData = '[]'; // Default to empty array if no polygon data
+      // Show loading indicator
+      if (addFarmScreenContext.mounted) {
+        Globals().startWait(addFarmScreenContext);
       }
+
+      polygon!.points.add(polygon!.points.first);
+
+      // Convert polygon to coordinate format
+      var boundaryCoordinates = polygon!.points
+          .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
+          .toList();
 
       final farm = Farm(
         projectId: projectIdController.text.trim(),
         visitId: visitIdController.text.trim(),
-        dateOfVisit: _harvestDate.toString(),
+        dateOfVisit: _visitDate?.toString() ?? '',
         mainBuyers: mainBuyersController.text.trim(),
-        farmBoundaryPolygon: polygonData,
+        farmBoundaryPolygon: Uint8List.fromList(
+          utf8.encode(jsonEncode(boundaryCoordinates)),
+        ),
         landUseClassification: landUseClassificationController.text.trim(),
         accessibility: accessibilityController.text.trim(),
         proximityToProcessingFacility: proximityToProcessingFacilityController
@@ -274,6 +444,19 @@ class AddFarmProvider with ChangeNotifier {
         farmSize: farmSizeController.text.trim(),
         location: farmLocationController.text.trim(),
         isSynced: false, // Set to false by default for new farms
+        // NEW FIELDS - You'll need to update your Farm model to include these
+        latitude: double.tryParse(latitudeController.text) ?? 0.0,
+        longitude: double.tryParse(longitudeController.text) ?? 0.0,
+        cropType: cropTypeController.text.trim(),
+        varietyBreed: varietyBreedController.text.trim(),
+        plantingDate: _plantingDate?.toString() ?? '',
+        plantingDensity: plantingDensityController.text.trim(),
+        labourHired: int.tryParse(labourHiredController.text) ?? 0,
+        maleWorkers: int.tryParse(maleWorkersController.text) ?? 0,
+        femaleWorkers: int.tryParse(femaleWorkersController.text) ?? 0,
+        estimatedYield: estimatedYieldController.text.trim(),
+        previousYield: previousYieldController.text.trim(),
+        harvestDate: _harvestDate?.toString() ?? '',
       );
 
       debugPrint('Saving farm with polygon data: ${farm.farmBoundaryPolygon}');
@@ -282,10 +465,17 @@ class AddFarmProvider with ChangeNotifier {
       final id = await _databaseHelper.insertFarm(farm);
       debugPrint('Farm saved with ID: $id');
 
+      // Hide loading indicator
+      if (addFarmScreenContext.mounted) {
+        Globals().endWait(addFarmScreenContext);
+      }
+
       // Show success message
       if (addFarmScreenContext.mounted) {
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          const SnackBar(content: Text('Farm saved successfully')),
+        CustomSnackbar.show(
+          addFarmScreenContext,
+          message: "Farm saved successfully",
+          type: SnackbarType.success,
         );
 
         // Navigate back after a short delay
@@ -301,9 +491,16 @@ class AddFarmProvider with ChangeNotifier {
       debugPrint('Error saving farm: $e');
       debugPrint('Stack trace: $stackTrace');
 
+      // Hide loading indicator
       if (addFarmScreenContext.mounted) {
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          SnackBar(content: Text('Error saving farm: ${e.toString()}')),
+        Globals().endWait(addFarmScreenContext);
+      }
+
+      if (addFarmScreenContext.mounted) {
+        CustomSnackbar.show(
+          addFarmScreenContext,
+          message: "An unknown error occurred",
+          type: SnackbarType.error,
         );
       }
 
@@ -330,19 +527,22 @@ class AddFarmProvider with ChangeNotifier {
         Globals().startWait(addFarmScreenContext);
       }
 
-      // Get polygon data from the controller or use empty array if not set
-      String polygonData = farmBoundaryPolygonController.text.trim();
-      if (polygonData.isEmpty) {
-        polygonData = '[]'; // Default to empty array if no polygon data
-      }
+      polygon!.points.add(polygon!.points.first);
+
+      // Convert polygon to coordinate format
+      var boundaryCoordinates = polygon!.points
+          .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
+          .toList();
 
       debugPrint('Creating farm object with polygon data...');
       final farm = Farm(
         projectId: projectIdController.text.trim(),
         visitId: visitIdController.text.trim(),
-        dateOfVisit: dateOfVisitController.text.trim(),
+        dateOfVisit: _visitDate?.toString() ?? '',
         mainBuyers: mainBuyersController.text.trim(),
-        farmBoundaryPolygon: polygonData,
+        farmBoundaryPolygon: Uint8List.fromList(
+          utf8.encode(jsonEncode(boundaryCoordinates)),
+        ),
         landUseClassification: landUseClassificationController.text.trim(),
         accessibility: accessibilityController.text.trim(),
         proximityToProcessingFacility: proximityToProcessingFacilityController
@@ -363,6 +563,20 @@ class AddFarmProvider with ChangeNotifier {
         farmSize: farmSizeController.text.trim(),
         location: farmLocationController.text.trim(),
         isSynced: false,
+
+        // NEW FIELDS
+        latitude: double.tryParse(latitudeController.text) ?? 0.0,
+        longitude: double.tryParse(longitudeController.text) ?? 0.0,
+        cropType: cropTypeController.text.trim(),
+        varietyBreed: varietyBreedController.text.trim(),
+        plantingDate: _plantingDate?.toString() ?? '',
+        plantingDensity: plantingDensityController.text.trim(),
+        labourHired: int.tryParse(labourHiredController.text) ?? 0,
+        maleWorkers: int.tryParse(maleWorkersController.text) ?? 0,
+        femaleWorkers: int.tryParse(femaleWorkersController.text) ?? 0,
+        estimatedYield: estimatedYieldController.text.trim(),
+        previousYield: previousYieldController.text.trim(),
+        harvestDate: _harvestDate?.toString() ?? '',
       );
 
       debugPrint('Saving farm with polygon data: ${farm.farmBoundaryPolygon}');
@@ -406,6 +620,35 @@ class AddFarmProvider with ChangeNotifier {
     }
   }
 
+  /// Submits the farm data to the server
+  Future<bool> submitFarm() async {
+    // First save locally
+    final saved = await saveFarm();
+    if (!saved) return false;
+
+    try {
+      // TODO: Implement actual server submission logic here
+      // For now, we'll just simulate a successful submission
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (addFarmScreenContext.mounted) {
+        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
+          const SnackBar(content: Text('Farm submitted successfully')),
+        );
+      }
+
+      return true;
+    } catch (e) {
+      debugPrint('Error submitting farm: $e');
+      if (addFarmScreenContext.mounted) {
+        ScaffoldMessenger.of(
+          addFarmScreenContext,
+        ).showSnackBar(SnackBar(content: Text('Error submitting farm: $e')));
+      }
+      return false;
+    }
+  }
+
   // Get all farms from database
   Future<List<Farm>> getAllFarms() async {
     return await _databaseHelper.getAllFarms();
@@ -438,37 +681,38 @@ class AddFarmProvider with ChangeNotifier {
     }
   }
 
-  /// Submits the farm data to the server
-  Future<bool> submitFarm() async {
-    // First save locally
-    final saved = await saveFarm();
-    if (!saved) return false;
+  // ==================================================================================
+  // VALIDATION
+  // ==================================================================================
 
-    try {
-      // TODO: Implement actual server submission logic here
-      // For now, we'll just simulate a successful submission
-      await Future.delayed(const Duration(seconds: 1));
-
-      if (addFarmScreenContext.mounted) {
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          const SnackBar(content: Text('Farm submitted successfully')),
-        );
-      }
-
-      return true;
-    } catch (e) {
-      debugPrint('Error submitting farm: $e');
+  bool _validateForm() {
+    // Basic validation
+    if (farmSizeController.text.isEmpty) {
       if (addFarmScreenContext.mounted) {
         ScaffoldMessenger.of(
           addFarmScreenContext,
-        ).showSnackBar(SnackBar(content: Text('Error submitting farm: $e')));
+        ).showSnackBar(const SnackBar(content: Text('Farm size is required')));
       }
       return false;
     }
-  }
 
-  bool _validateForm() {
-    // Add more validation as needed
+    if (latitudeController.text.isEmpty || longitudeController.text.isEmpty) {
+      if (addFarmScreenContext.mounted) {
+        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
+          const SnackBar(content: Text('GPS coordinates are required')),
+        );
+      }
+      return false;
+    }
+
+    if (cropTypeController.text.isEmpty) {
+      if (addFarmScreenContext.mounted) {
+        ScaffoldMessenger.of(
+          addFarmScreenContext,
+        ).showSnackBar(const SnackBar(content: Text('Crop type is required')));
+      }
+      return false;
+    }
 
     return true;
   }
@@ -582,10 +826,6 @@ class AddFarmProvider with ChangeNotifier {
   }
 
   // ==================================================================================
-  // FARM DATA LOADING & PROCESSING
-  // ==================================================================================
-
-  // ==================================================================================
   // POLYGON DRAWING INTERFACE
   // ==================================================================================
 
@@ -655,166 +895,76 @@ class AddFarmProvider with ChangeNotifier {
   }
 
   // ==================================================================================
-  // FARM SUBMISSION OPERATIONS
+  // UTILITY METHODS
   // ==================================================================================
 
-  // handleAddFarm() async {
-  //   final globalProvider = Provider.of<GlobalProvider>(addFarmScreenContext, listen: false);
-  //   final homeProvider = Provider.of<HomeProvider>(addFarmScreenContext, listen: false);
-  //
-  //   polygon!.points.add(polygon!.points.first);
-  //
-  //   var boundaryCoordinates = polygon!.points
-  //       .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
-  //       .toList();
-  //
-  //   globals.startWait(addFarmScreenContext);
-  //
-  //   try {
-  //     DateTime now = DateTime.now();
-  //     String formattedReportingDate = DateFormat('yyyy-MM-dd').format(now);
-  //
-  //     Farm farmData = Farm(
-  //       uid: const Uuid().v4(),
-  //       agent: globalProvider.userInfo.value.userId!,
-  //       cocobod_id: cocobodIDController?.text.trim(),
-  //       farmboundary:
-  //       Uint8List.fromList(utf8.encode(jsonEncode(boundaryCoordinates))),
-  //       farmer: farmerFromServer!.farmerId,
-  //       farmArea: double.parse(farmAreaTC!.text.trim()),
-  //       registrationDate: formattedReportingDate,
-  //       status: SubmissionStatus.submitted,
-  //       societyCode: society?.societyCode,
-  //     );
-  //
-  //     Map<String, dynamic> data = farmData.toJson();
-  //     data.remove('status');
-  //     data.remove('societyCode');
-  //
-  //     debugPrint("FARM DATA :::::: ${data.toString()}");
-  //
-  //     var postResult = await farmerApiInterface.saveFarm(farmData, data);
-  //
-  //     if (postResult['status'] == RequestStatus.True ||
-  //         postResult['status'] == RequestStatus.Exist ||
-  //         postResult['status'] == RequestStatus.NoInternet) {
-  //       await generalCocoaRehabApiInterface.loadAssignedFarms();
-  //
-  //       globals.endWait(addFarmScreenContext);
-  //       Navigator.of(addFarmScreenContext).pop();
-  //
-  //       globals.showSecondaryDialog(
-  //         context: homeProvider.homeScreenContext,
-  //         content: Text(
-  //           postResult['msg'],
-  //           style: const TextStyle(fontSize: 13),
-  //           textAlign: TextAlign.center,
-  //         ),
-  //         status: AlertDialogStatus.success,
-  //         okayTap: () => Navigator.of(homeProvider.homeScreenContext).pop(),
-  //       );
-  //     } else if (postResult['status'] == RequestStatus.False) {
-  //       globals.endWait(addFarmScreenContext);
-  //
-  //       globals.showSecondaryDialog(
-  //         context: addFarmScreenContext,
-  //         content: Text(
-  //           postResult['msg'],
-  //           style: const TextStyle(fontSize: 13),
-  //           textAlign: TextAlign.center,
-  //         ),
-  //         // status: AlertDialogStatus.error,
-  //       );
-  //     }
-  //   } catch (e) {
-  //     globals.endWait(addFarmScreenContext);
-  //     print("Error submitting farm: $e");
-  //
-  //     globals.showSecondaryDialog(
-  //       context: addFarmScreenContext,
-  //       content: const Text(
-  //         'An error occurred while submitting the farm. Please try again.',
-  //         style: TextStyle(fontSize: 13),
-  //         textAlign: TextAlign.center,
-  //       ),
-  //       // status: AlertDialogStatus.error,
-  //     );
-  //   }
-  // }
+  /// Clears all form fields
+  void clearForm() {
+    farmLocationController.clear();
+    projectIdController.clear();
+    farmSizeController.clear();
+    visitIdController.clear();
+    dateOfVisitController.clear();
+    mainBuyersController.clear();
+    farmBoundaryPolygonController.clear();
+    landUseClassificationController.clear();
+    accessibilityController.clear();
+    proximityToProcessingFacilityController.clear();
+    serviceProviderController.clear();
+    cooperativesOrFarmerGroupsController.clear();
+    valueChainLinkagesController.clear();
+    officerNameController.clear();
+    officerIdController.clear();
+    observationsController.clear();
+    issuesIdentifiedController.clear();
+    infrastructureIdentifiedController.clear();
+    recommendedActionsController.clear();
+    followUpStatusController.clear();
 
-  // ==================================================================================
-  // OFFLINE FARM STORAGE
-  // ==================================================================================
+    // Clear new fields
+    latitudeController.clear();
+    longitudeController.clear();
+    cropTypeController.clear();
+    varietyBreedController.clear();
+    plantingDensityController.clear();
+    labourHiredController.clear();
+    maleWorkersController.clear();
+    femaleWorkersController.clear();
+    estimatedYieldController.clear();
+    previousYieldController.clear();
 
-  // handleSaveOfflineFarm() async {
-  //   final globalProvider = Provider.of<GlobalProvider>(addFarmScreenContext, listen: false);
-  //   final homeProvider = Provider.of<HomeProvider>(addFarmScreenContext, listen: false);
-  //
-  //   polygon!.points.add(polygon!.points.first);
-  //
-  //   var boundaryCoordinates = polygon!.points
-  //       .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
-  //       .toList();
-  //
-  //   globals.startWait(addFarmScreenContext);
-  //
-  //   try {
-  //     DateTime now = DateTime.now();
-  //     String formattedReportingDate = DateFormat('yyyy-MM-dd').format(now);
-  //
-  //     Farm farmData = Farm(
-  //       // uid: const Uuid().v4(),
-  //       // agent: globalProvider.userInfo.value.userId!,
-  //       // cocobod_id: cocobodIDController?.text.trim(),
-  //       // farmboundary:
-  //       // Uint8List.fromList(utf8.encode(jsonEncode(boundaryCoordinates))),
-  //       // farmer: farmerFromServer!.farmerId,
-  //       // farmArea: double.parse(farmAreaTC!.text.trim()),
-  //       // registrationDate: formattedReportingDate,
-  //       // status: SubmissionStatus.pending,
-  //       // societyCode: society?.societyCode,
-  //     );
-  //
-  //     Map<String, dynamic> data = farmData.toJson();
-  //     data.remove('status');
-  //     data.remove('societyCode');
-  //
-  //     final farmDao = globalProvider.database!.farmDao;
-  //     await farmDao.insertFarm(farmData);
-  //
-  //     globals.endWait(addFarmScreenContext);
-  //
-  //     Navigator.of(addFarmScreenContext).pop(result: {'farm': farmData, 'submitted': false});
-  //
-  //     globals.showSecondaryDialog(
-  //       context: homeProvider.homeScreenContext,
-  //       content: const Text(
-  //         'Farm Record saved',
-  //         style: TextStyle(fontSize: 13),
-  //         textAlign: TextAlign.center,
-  //       ),
-  //       // status: AlertDialogStatus.success,
-  //       okayTap: () => Navigator.of(homeProvider.homeScreenContext).pop(),
-  //     );
-  //   } catch (e) {
-  //     globals.endWait(addFarmScreenContext);
-  //     print("Error saving offline farm: $e");
-  //
-  //     globals.showSecondaryDialog(
-  //       context: addFarmScreenContext,
-  //       content: const Text(
-  //         'An error occurred while saving the farm. Please try again.',
-  //         style: TextStyle(fontSize: 13),
-  //         textAlign: TextAlign.center,
-  //       ),
-  //       status: AlertDialogStatus.error,
-  //     );
-  //   }
-  // }
+    // Clear dates
+    _harvestDate = null;
+    _plantingDate = null;
+    _visitDate = null;
+    _hasFarmBoundaryPolygon = false;
 
-  // ==================================================================================
-  // CLEANUP
-  // ==================================================================================
+    // Clear polygon
+    polygon = null;
+    markers = null;
+
+    notifyListeners();
+  }
+
+  /// Validates if all required fields are filled
+  bool isFormValid() {
+    return farmSizeController.text.isNotEmpty &&
+        latitudeController.text.isNotEmpty &&
+        longitudeController.text.isNotEmpty &&
+        cropTypeController.text.isNotEmpty;
+  }
+
+  /// Gets a summary of the farm data for preview
+  Map<String, dynamic> getFarmSummary() {
+    return {
+      'farmSize': farmSizeController.text,
+      'cropType': cropTypeController.text,
+      'coordinates': '${latitudeController.text}, ${longitudeController.text}',
+      'plantingDate': _plantingDate?.toString(),
+      'harvestDate': _harvestDate?.toString(),
+      'hasBoundary': _hasFarmBoundaryPolygon,
+    };
+  }
 }
 
 class MaximumAccuracy {

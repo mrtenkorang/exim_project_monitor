@@ -139,6 +139,20 @@ class DatabaseHelper {
   static const String columnServerCreatedAt = 'created_at';
   static const String columnServerUpdatedAt = 'updated_at';
 
+  // Add these to your column constants section
+  static const String columnLatitude = 'latitude';
+  static const String columnLongitude = 'longitude';
+  // static const String columnCropType = 'cropType';
+  // static const String columnVarietyBreed = 'varietyBreed';
+  // static const String columnPlantingDate = 'plantingDate';
+  // static const String columnPlantingDensity = 'plantingDensity';
+  static const String columnLabourHired = 'labourHired';
+  static const String columnMaleWorkers = 'maleWorkers';
+  static const String columnFemaleWorkers = 'femaleWorkers';
+  // static const String columnEstimatedYield = 'estimatedYield';
+  // static const String columnPreviousYield = 'previousYield';
+  // static const String columnHarvestDate = 'harvestDate';
+
   // Private constructor
   DatabaseHelper._internal();
 
@@ -169,33 +183,46 @@ class DatabaseHelper {
   Future<void> _onCreate(Database db, int version) async {
     // Create farms table
     await db.execute('''
-      CREATE TABLE $tableFarms (
-        $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
-        $columnProjectId TEXT NOT NULL,
-        $columnVisitId TEXT NOT NULL UNIQUE,
-        $columnDateOfVisit TEXT NOT NULL,
-        $columnMainBuyers TEXT NOT NULL,
-        $columnFarmBoundaryPolygon TEXT NOT NULL,
-        $columnLandUseClassification TEXT NOT NULL,
-        $columnAccessibility TEXT NOT NULL,
-        $columnProximityToFacility TEXT NOT NULL,
-        $columnServiceProvider TEXT NOT NULL,
-        $columnCooperativesOrFarmerGroups TEXT NOT NULL,
-        $columnValueChainLinkages TEXT NOT NULL,
-        $columnOfficerName TEXT NOT NULL,
-        $columnOfficerId TEXT NOT NULL,
-        $columnObservations TEXT NOT NULL,
-        $columnIssuesIdentified TEXT NOT NULL,
-        $columnInfrastructureIdentified TEXT NOT NULL,
-        $columnRecommendedActions TEXT NOT NULL,
-        $columnFollowUpStatus TEXT NOT NULL,
-        $columnFarmSize TEXT NOT NULL,
-        $columnLocation TEXT NOT NULL,
-        $columnCreatedAt TEXT NOT NULL,
-        $columnUpdatedAt TEXT,
-        $columnIsSynced INTEGER NOT NULL
-      )
-    ''');
+  CREATE TABLE $tableFarms (
+    $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
+    $columnProjectId TEXT NOT NULL,
+    $columnVisitId TEXT NOT NULL UNIQUE,
+    $columnDateOfVisit TEXT NOT NULL,
+    $columnMainBuyers TEXT NOT NULL,
+    $columnFarmBoundaryPolygon TEXT NOT NULL,
+    $columnLandUseClassification TEXT NOT NULL,
+    $columnAccessibility TEXT NOT NULL,
+    $columnProximityToFacility TEXT NOT NULL,
+    $columnServiceProvider TEXT NOT NULL,
+    $columnCooperativesOrFarmerGroups TEXT NOT NULL,
+    $columnValueChainLinkages TEXT NOT NULL,
+    $columnOfficerName TEXT NOT NULL,
+    $columnOfficerId TEXT NOT NULL,
+    $columnObservations TEXT NOT NULL,
+    $columnIssuesIdentified TEXT NOT NULL,
+    $columnInfrastructureIdentified TEXT NOT NULL,
+    $columnRecommendedActions TEXT NOT NULL,
+    $columnFollowUpStatus TEXT NOT NULL,
+    $columnFarmSize TEXT NOT NULL,
+    $columnLocation TEXT NOT NULL,
+    $columnCreatedAt TEXT NOT NULL,
+    $columnUpdatedAt TEXT,
+    $columnIsSynced INTEGER NOT NULL,
+    
+    $columnLatitude REAL NOT NULL DEFAULT 0.0,
+    $columnLongitude REAL NOT NULL DEFAULT 0.0,
+    $columnCropType TEXT NOT NULL DEFAULT '',
+    $columnVarietyBreed TEXT NOT NULL DEFAULT '',
+    $columnPlantingDate TEXT NOT NULL DEFAULT '',
+    $columnPlantingDensity TEXT NOT NULL DEFAULT '',
+    $columnLabourHired INTEGER NOT NULL DEFAULT 0,
+    $columnMaleWorkers INTEGER NOT NULL DEFAULT 0,
+    $columnFemaleWorkers INTEGER NOT NULL DEFAULT 0,
+    $columnEstimatedYield TEXT NOT NULL DEFAULT '',
+    $columnPreviousYield TEXT NOT NULL DEFAULT '',
+    $columnHarvestDate TEXT NOT NULL DEFAULT ''
+  )
+''');
 
     // await db.execute('''
     //   CREATE TABLE $tableFarmersFarmsFromServer (

@@ -195,7 +195,29 @@ Spacer(),
                       // if (res) setState(() {});
                     },
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 16),
+                  _buildEvacuationSection(
+                    imgPath: "assets/img/farm.png",
+                    context,
+                    title: "Monitoring (coming soon)",
+                    color: theme.colorScheme.primary,
+                    onAdd: () async {
+                      // final result = await Get.to(() => const AddFarmScreen());
+                      // _handleResult(result);
+                    },
+                    onList: () async {
+                      // final result = await Get.to(() => const FarmList());
+                      // _handleResult(result);
+                    },
+                    onHistory: () async {
+                      // final result = await Get.to(() => const FarmHistory());
+                      // _handleResult(result);
+                    },
+                    onSync: () async {
+                      // var res = await homeController.submitAllPendingSecondaryEvacData();
+                      // if (res) setState(() {});
+                    },
+                  ),
                 ]),
               ),
             ),

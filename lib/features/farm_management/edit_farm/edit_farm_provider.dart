@@ -1,7 +1,9 @@
 // ignore_for_file: prefer_typing_uninitialized_variables, use_build_context_synchronously, avoid_print
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 import 'dart:ui';
 import 'package:exim_project_monitor/features/farm_management/polygon_drawing_tool/polygon_drawing_tool.dart';
 import 'package:exim_project_monitor/features/farm_management/polygon_drawing_tool/utils/double_value_trimmer.dart';
@@ -15,113 +17,200 @@ import '../../../core/models/farm_model.dart';
 import '../../../core/services/database/database_helper.dart';
 import '../../../widgets/globals/globals.dart';
 
-/// Provider class for managing farm addition operations
+/// Provider class for managing farm editing operations
 /// Handles location services, polygon drawing, farm validation, and data persistence
 class EditFarmProvider with ChangeNotifier {
-  // Database instance
   // ==================================================================================
   // PROPERTIES & DEPENDENCIES
   // ==================================================================================
 
-  /// Build context for the add farm screen - used for dialogs and navigation
+  /// Build context for the edit farm screen - used for dialogs and navigation
   late BuildContext addFarmScreenContext;
 
   final _databaseHelper = DatabaseHelper();
+
+  // Date fields
   DateTime? _harvestDate;
+  DateTime? _plantingDate;
+  DateTime? _dateOfVisit;
 
   DateTime? get harvestDate => _harvestDate;
+  DateTime? get plantingDate => _plantingDate;
+  DateTime? get dateOfVisit => _dateOfVisit;
 
   void setHarvestDate(DateTime? date) {
     _harvestDate = date;
     notifyListeners();
   }
 
-  // Controllers
+  void setPlantingDate(DateTime? date) {
+    _plantingDate = date;
+    notifyListeners();
+  }
+
+  void setDateOfVisit(DateTime? date) {
+    _dateOfVisit = date;
+    notifyListeners();
+  }
+
+  // Farm boundary toggle
+  bool _hasFarmBoundaryPolygon = false;
+  bool get hasFarmBoundaryPolygon => _hasFarmBoundaryPolygon;
+
+  void setFarmBoundaryPolygon(bool value) {
+    _hasFarmBoundaryPolygon = value;
+    notifyListeners();
+  }
+
+  // ==================================================================================
+  // CONTROLLERS FOR ALL FIELDS
+  // ==================================================================================
+
+  // Basic Information
   final TextEditingController farmLocationController = TextEditingController();
   final TextEditingController projectIdController = TextEditingController();
   final TextEditingController farmSizeController = TextEditingController();
   final TextEditingController visitIdController = TextEditingController();
   final TextEditingController dateOfVisitController = TextEditingController();
+
+  // GPS Coordinates
+  final TextEditingController latitudeController = TextEditingController();
+  final TextEditingController longitudeController = TextEditingController();
+
+  // Crop Information
+  final TextEditingController cropTypeController = TextEditingController();
+  final TextEditingController varietyBreedController = TextEditingController();
+  final TextEditingController plantingDensityController = TextEditingController();
+
+  // Labour Information
+  final TextEditingController labourHiredController = TextEditingController();
+  final TextEditingController maleWorkersController = TextEditingController();
+  final TextEditingController femaleWorkersController = TextEditingController();
+
+  // Yield Information
+  final TextEditingController estimatedYieldController = TextEditingController();
+  final TextEditingController previousYieldController = TextEditingController();
+
+  // Secondary Data
   final TextEditingController mainBuyersController = TextEditingController();
-  final TextEditingController farmBoundaryPolygonController =
-  TextEditingController();
-  final TextEditingController landUseClassificationController =
-  TextEditingController();
+  final TextEditingController farmBoundaryPolygonController = TextEditingController();
+  final TextEditingController landUseClassificationController = TextEditingController();
   final TextEditingController accessibilityController = TextEditingController();
-  final TextEditingController proximityToProcessingFacilityController =
-  TextEditingController();
-  final TextEditingController serviceProviderController =
-  TextEditingController();
-  final TextEditingController cooperativesOrFarmerGroupsController =
-  TextEditingController();
-  final TextEditingController valueChainLinkagesController =
-  TextEditingController();
+  final TextEditingController proximityToProcessingFacilityController = TextEditingController();
+  final TextEditingController serviceProviderController = TextEditingController();
+  final TextEditingController cooperativesOrFarmerGroupsController = TextEditingController();
+  final TextEditingController valueChainLinkagesController = TextEditingController();
+
+  // Officer Information
   final TextEditingController officerNameController = TextEditingController();
   final TextEditingController officerIdController = TextEditingController();
+
+  // Assessment
   final TextEditingController observationsController = TextEditingController();
-  final TextEditingController issuesIdentifiedController =
-  TextEditingController();
-  final TextEditingController infrastructureIdentifiedController =
-  TextEditingController();
-  final TextEditingController recommendedActionsController =
-  TextEditingController();
-  final TextEditingController followUpStatusController =
-  TextEditingController();
+  final TextEditingController issuesIdentifiedController = TextEditingController();
+  final TextEditingController infrastructureIdentifiedController = TextEditingController();
+  final TextEditingController recommendedActionsController = TextEditingController();
+  final TextEditingController followUpStatusController = TextEditingController();
 
   String? _selectedProjectID;
   String? get selectedProjectID => _selectedProjectID;
 
   final List<String> projectIDs = ["Project 1", "Project 2", "Project 3"];
 
-  /// Form key for validation of the add farm form
-  ///
   void setSelectedProject(String? val) {
     _selectedProjectID = val;
     projectIdController.text = val ?? '';
     notifyListeners();
   }
 
+  int? _farmId;
+  int? get farmId => _farmId;
+
   void initFarmData(Farm farm) {
     try {
+      _farmId = farm.id;
       // Set the project ID and update the selected project
-      projectIdController.text = farm.projectId ?? '';
+      projectIdController.text = farm.projectId;
       _selectedProjectID = farm.projectId;
-      
-      // Parse the date from the farm object
+
+      // Parse dates from the farm object
       if (farm.dateOfVisit.isNotEmpty) {
         try {
-          _harvestDate = DateTime.parse(farm.dateOfVisit);
-          // Format the date to match what the DateField expects (YYYY-MM-DD)
-          dateOfVisitController.text = "${_harvestDate!.year}-${_harvestDate!.month.toString().padLeft(2, '0')}-${_harvestDate!.day.toString().padLeft(2, '0')}";
+          _dateOfVisit = DateTime.parse(farm.dateOfVisit);
+          dateOfVisitController.text = "${_dateOfVisit!.year}-${_dateOfVisit!.month.toString().padLeft(2, '0')}-${_dateOfVisit!.day.toString().padLeft(2, '0')}";
         } catch (e) {
-          debugPrint('Error parsing date: $e');
-          dateOfVisitController.text = farm.dateOfVisit; // Fallback to raw string if parsing fails
-          _harvestDate = null; // Reset harvest date if parsing fails
+          debugPrint('Error parsing visit date: $e');
+          dateOfVisitController.text = farm.dateOfVisit;
+          _dateOfVisit = null;
         }
       } else {
-        _harvestDate = null; // Reset if no date is provided
+        _dateOfVisit = null;
       }
-      
+
+      // Parse planting date
+      if (farm.plantingDate.isNotEmpty) {
+        try {
+          _plantingDate = DateTime.parse(farm.plantingDate);
+        } catch (e) {
+          debugPrint('Error parsing planting date: $e');
+          _plantingDate = null;
+        }
+      } else {
+        _plantingDate = null;
+      }
+
+      // Parse harvest date
+      if (farm.harvestDate.isNotEmpty) {
+        try {
+          _harvestDate = DateTime.parse(farm.harvestDate);
+        } catch (e) {
+          debugPrint('Error parsing harvest date: $e');
+          _harvestDate = null;
+        }
+      } else {
+        _harvestDate = null;
+      }
+
+      // Set GPS coordinates
+      latitudeController.text = farm.latitude.toString();
+      longitudeController.text = farm.longitude.toString();
+
+      // Set crop information
+      cropTypeController.text = farm.cropType;
+      varietyBreedController.text = farm.varietyBreed;
+      plantingDensityController.text = farm.plantingDensity;
+
+      // Set labour information
+      labourHiredController.text = farm.labourHired.toString();
+      maleWorkersController.text = farm.maleWorkers.toString();
+      femaleWorkersController.text = farm.femaleWorkers.toString();
+
+      // Set yield information
+      estimatedYieldController.text = farm.estimatedYield;
+      previousYieldController.text = farm.previousYield;
+
       // Set other fields
-      farmLocationController.text = farm.location ?? '';
-      farmSizeController.text = farm.farmSize ?? '';
-      visitIdController.text = farm.visitId ?? '';
-      mainBuyersController.text = farm.mainBuyers ?? '';
-      farmBoundaryPolygonController.text = farm.farmBoundaryPolygon ?? '';
-      landUseClassificationController.text = farm.landUseClassification ?? '';
-      accessibilityController.text = farm.accessibility ?? '';
-      proximityToProcessingFacilityController.text = farm.proximityToProcessingFacility ?? '';
-      serviceProviderController.text = farm.serviceProvider ?? '';
-      cooperativesOrFarmerGroupsController.text = farm.cooperativesOrFarmerGroups ?? '';
-      valueChainLinkagesController.text = farm.valueChainLinkages ?? '';
-      officerNameController.text = farm.officerName ?? '';
-      officerIdController.text = farm.officerId ?? '';
-      observationsController.text = farm.observations ?? '';
-      issuesIdentifiedController.text = farm.issuesIdentified ?? '';
-      infrastructureIdentifiedController.text = farm.infrastructureIdentified ?? '';
-      recommendedActionsController.text = farm.recommendedActions ?? '';
-      followUpStatusController.text = farm.followUpStatus ?? '';
-      
+      farmLocationController.text = farm.location;
+      farmSizeController.text = farm.farmSize;
+      visitIdController.text = farm.visitId;
+      mainBuyersController.text = farm.mainBuyers;
+      landUseClassificationController.text = farm.landUseClassification;
+      accessibilityController.text = farm.accessibility;
+      proximityToProcessingFacilityController.text = farm.proximityToProcessingFacility;
+      serviceProviderController.text = farm.serviceProvider;
+      cooperativesOrFarmerGroupsController.text = farm.cooperativesOrFarmerGroups;
+      valueChainLinkagesController.text = farm.valueChainLinkages;
+      officerNameController.text = farm.officerName;
+      officerIdController.text = farm.officerId;
+      observationsController.text = farm.observations;
+      issuesIdentifiedController.text = farm.issuesIdentified;
+      infrastructureIdentifiedController.text = farm.infrastructureIdentified;
+      recommendedActionsController.text = farm.recommendedActions;
+      followUpStatusController.text = farm.followUpStatus;
+
+      // Set farm boundary polygon status
+      _hasFarmBoundaryPolygon = farm.hasBoundaryPolygon;
+
       // Notify listeners to update the UI with the new data
       notifyListeners();
     } catch (e) {
@@ -132,11 +221,22 @@ class EditFarmProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    // Dispose all controllers
     farmLocationController.dispose();
     projectIdController.dispose();
     farmSizeController.dispose();
     visitIdController.dispose();
     dateOfVisitController.dispose();
+    latitudeController.dispose();
+    longitudeController.dispose();
+    cropTypeController.dispose();
+    varietyBreedController.dispose();
+    plantingDensityController.dispose();
+    labourHiredController.dispose();
+    maleWorkersController.dispose();
+    femaleWorkersController.dispose();
+    estimatedYieldController.dispose();
+    previousYieldController.dispose();
     mainBuyersController.dispose();
     farmBoundaryPolygonController.dispose();
     landUseClassificationController.dispose();
@@ -158,12 +258,6 @@ class EditFarmProvider with ChangeNotifier {
   final addFarmFormKey = GlobalKey<FormState>();
 
   // Services
-  // Globals globals = Globals();
-  // FarmerApiInterface farmerApiInterface = FarmerApiInterface();
-  // GeneralCocoaRehabApiInterface generalCocoaRehabApiInterface =
-  // GeneralCocoaRehabApiInterface();
-
-  /// Date formatter for consistent date formatting across the app
   DateFormat dateFormat = DateFormat('yyyy-MM-dd');
 
   // ==================================================================================
@@ -186,24 +280,6 @@ class EditFarmProvider with ChangeNotifier {
     _isInitialLoad = value;
     notifyListeners();
   }
-
-  // ==================================================================================
-  // DATA MODELS
-  // ==================================================================================
-
-  /// Society information for the farm being added
-  // Society? society = Society();
-  //
-  // /// Farmer information retrieved from server
-  // FarmerFromServer? farmerFromServer = FarmerFromServer();
-  //
-  // /// Currently selected farm from assigned farms list
-  // AssignedFarm? _selectedFarm = AssignedFarm();
-  // AssignedFarm? get selectedFarm => _selectedFarm;
-  // set selectedFarm(AssignedFarm? value) {
-  //   _selectedFarm = value;
-  //   notifyListeners();
-  // }
 
   // ==================================================================================
   // MAP & POLYGON RELATED PROPERTIES
@@ -292,163 +368,92 @@ class EditFarmProvider with ChangeNotifier {
 
     debugPrint('Form is valid. Saving farm...');
     try {
-      // Get polygon data from the controller or use empty array if not set
-      String polygonData = farmBoundaryPolygonController.text.trim();
-      if (polygonData.isEmpty) {
-        polygonData = '[]'; // Default to empty array if no polygon data
+      // If polygon exists, close it by adding the first point
+      if (polygon != null) {
+        polygon!.points.add(polygon!.points.first);
+      }
+
+      // Convert polygon to coordinate format if exists
+      Uint8List? boundaryPolygon;
+      if (polygon != null && polygon!.points.isNotEmpty) {
+        var boundaryCoordinates = polygon!.points
+            .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
+            .toList();
+        boundaryPolygon = Uint8List.fromList(utf8.encode(jsonEncode(boundaryCoordinates)));
       }
 
       final farm = Farm(
+        id: _farmId,
         projectId: projectIdController.text.trim(),
         visitId: visitIdController.text.trim(),
-        dateOfVisit: _harvestDate.toString(),
+        dateOfVisit: _dateOfVisit?.toIso8601String() ?? '',
         mainBuyers: mainBuyersController.text.trim(),
-        farmBoundaryPolygon: polygonData,
+        farmBoundaryPolygon: boundaryPolygon,
         landUseClassification: landUseClassificationController.text.trim(),
         accessibility: accessibilityController.text.trim(),
-        proximityToProcessingFacility: proximityToProcessingFacilityController
-            .text
-            .trim(),
+        proximityToProcessingFacility: proximityToProcessingFacilityController.text.trim(),
         serviceProvider: serviceProviderController.text.trim(),
-        cooperativesOrFarmerGroups: cooperativesOrFarmerGroupsController.text
-            .trim(),
+        cooperativesOrFarmerGroups: cooperativesOrFarmerGroupsController.text.trim(),
         valueChainLinkages: valueChainLinkagesController.text.trim(),
         officerName: officerNameController.text.trim(),
         officerId: officerIdController.text.trim(),
         observations: observationsController.text.trim(),
         issuesIdentified: issuesIdentifiedController.text.trim(),
-        infrastructureIdentified: infrastructureIdentifiedController.text
-            .trim(),
+        infrastructureIdentified: infrastructureIdentifiedController.text.trim(),
         recommendedActions: recommendedActionsController.text.trim(),
         followUpStatus: followUpStatusController.text.trim(),
         farmSize: farmSizeController.text.trim(),
         location: farmLocationController.text.trim(),
-        isSynced: true,
+        isSynced: false, // Mark as not synced since it's updated
+        updatedAt: DateTime.now(),
+
+        // New fields
+        latitude: double.tryParse(latitudeController.text) ?? 0.0,
+        longitude: double.tryParse(longitudeController.text) ?? 0.0,
+        cropType: cropTypeController.text.trim(),
+        varietyBreed: varietyBreedController.text.trim(),
+        plantingDate: _plantingDate?.toIso8601String() ?? '',
+        plantingDensity: plantingDensityController.text.trim(),
+        labourHired: int.tryParse(labourHiredController.text) ?? 0,
+        maleWorkers: int.tryParse(maleWorkersController.text) ?? 0,
+        femaleWorkers: int.tryParse(femaleWorkersController.text) ?? 0,
+        estimatedYield: estimatedYieldController.text.trim(),
+        previousYield: previousYieldController.text.trim(),
+        harvestDate: _harvestDate?.toIso8601String() ?? '',
       );
 
-      debugPrint('Saving farm with polygon data: ${farm.farmBoundaryPolygon}');
+      debugPrint('Updating farm with ID: ${farm.id}');
 
-      // Insert the farm into the database
-      final id = await _databaseHelper.insertFarm(farm);
-      debugPrint('Farm saved with ID: $id');
+      // Update the farm in the database
+      final id = await _databaseHelper.updateFarm(farm);
 
-      // Show success message
-      if (addFarmScreenContext.mounted) {
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          const SnackBar(content: Text('Farm saved successfully')),
-        );
+      if (id>=0) {
+        debugPrint('Farm updated successfully');
 
-        // Navigate back after a short delay
-        Future.delayed(const Duration(seconds: 1), () {
-          if (addFarmScreenContext.mounted) {
-            Navigator.of(addFarmScreenContext).pop(true); // Return success
-          }
-        });
+        // Show success message
+        if (addFarmScreenContext.mounted) {
+          ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
+            const SnackBar(content: Text('Farm updated successfully')),
+          );
+
+          // Navigate back after a short delay
+          Future.delayed(const Duration(seconds: 1), () {
+            if (addFarmScreenContext.mounted) {
+              Navigator.of(addFarmScreenContext).pop(true); // Return success
+            }
+          });
+        }
+        return true;
+      } else {
+        throw Exception('Failed to update farm in database');
       }
-
-      return true;
     } catch (e, stackTrace) {
-      debugPrint('Error saving farm: $e');
+      debugPrint('Error updating farm: $e');
       debugPrint('Stack trace: $stackTrace');
 
       if (addFarmScreenContext.mounted) {
         ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          SnackBar(content: Text('Error saving farm: ${e.toString()}')),
-        );
-      }
-
-      return false;
-    }
-  }
-
-  /// Saves the farm data to the local database and syncs with the server if online
-  Future<bool> saveFarmToDatabase() async {
-    debugPrint('Saving farm to database...');
-    if (!_validateForm()) {
-      debugPrint('Form validation failed');
-      if (addFarmScreenContext.mounted) {
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          const SnackBar(content: Text('Please fill all required fields')),
-        );
-      }
-      return false;
-    }
-
-    try {
-      // Show loading indicator
-      if (addFarmScreenContext.mounted) {
-        Globals().startWait(addFarmScreenContext);
-      }
-
-      // Get polygon data from the controller or use empty array if not set
-      String polygonData = farmBoundaryPolygonController.text.trim();
-      if (polygonData.isEmpty) {
-        polygonData = '[]'; // Default to empty array if no polygon data
-      }
-
-      debugPrint('Creating farm object with polygon data...');
-      final farm = Farm(
-        projectId: projectIdController.text.trim(),
-        visitId: visitIdController.text.trim(),
-        dateOfVisit: _harvestDate.toString(),
-        mainBuyers: mainBuyersController.text.trim(),
-        farmBoundaryPolygon: polygonData,
-        landUseClassification: landUseClassificationController.text.trim(),
-        accessibility: accessibilityController.text.trim(),
-        proximityToProcessingFacility: proximityToProcessingFacilityController
-            .text
-            .trim(),
-        serviceProvider: serviceProviderController.text.trim(),
-        cooperativesOrFarmerGroups: cooperativesOrFarmerGroupsController.text
-            .trim(),
-        valueChainLinkages: valueChainLinkagesController.text.trim(),
-        officerName: officerNameController.text.trim(),
-        officerId: officerIdController.text.trim(),
-        observations: observationsController.text.trim(),
-        issuesIdentified: issuesIdentifiedController.text.trim(),
-        infrastructureIdentified: infrastructureIdentifiedController.text
-            .trim(),
-        recommendedActions: recommendedActionsController.text.trim(),
-        followUpStatus: followUpStatusController.text.trim(),
-        farmSize: farmSizeController.text.trim(),
-        location: farmLocationController.text.trim(),
-        isSynced: false,
-      );
-
-      debugPrint('Saving farm with polygon data: ${farm.farmBoundaryPolygon}');
-
-      // Save to local database
-      final id = await _databaseHelper.insertFarm(farm);
-      debugPrint('Farm saved with ID: $id');
-
-      // TODO: Add server sync logic here when online
-
-      // Show success message
-      if (addFarmScreenContext.mounted) {
-        Globals().endWait(addFarmScreenContext);
-
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          const SnackBar(content: Text('Farm saved successfully')),
-        );
-
-        // Navigate back after a short delay
-        Future.delayed(const Duration(seconds: 1), () {
-          if (addFarmScreenContext.mounted) {
-            Navigator.of(addFarmScreenContext).pop(true); // Return success
-          }
-        });
-      }
-
-      return true;
-    } catch (e, stackTrace) {
-      debugPrint('Error saving farm: $e');
-      debugPrint('Stack trace: $stackTrace');
-
-      if (addFarmScreenContext.mounted) {
-        Globals().endWait(addFarmScreenContext);
-
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          SnackBar(content: Text('Error saving farm: ${e.toString()}')),
+          SnackBar(content: Text('Error updating farm: ${e.toString()}')),
         );
       }
 
@@ -509,16 +514,35 @@ class EditFarmProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('Error submitting farm: $e');
       if (addFarmScreenContext.mounted) {
-        ScaffoldMessenger.of(
-          addFarmScreenContext,
-        ).showSnackBar(SnackBar(content: Text('Error submitting farm: $e')));
+        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
+            SnackBar(content: Text('Error submitting farm: $e')));
       }
       return false;
     }
   }
 
   bool _validateForm() {
-    // Add more validation as needed
+    // Basic validation - you can add more specific validation as needed
+    if (projectIdController.text.isEmpty) {
+      ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
+        const SnackBar(content: Text('Project ID is required')),
+      );
+      return false;
+    }
+
+    if (visitIdController.text.isEmpty) {
+      ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
+        const SnackBar(content: Text('Visit ID is required')),
+      );
+      return false;
+    }
+
+    if (farmSizeController.text.isEmpty) {
+      ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
+        const SnackBar(content: Text('Farm size is required')),
+      );
+      return false;
+    }
 
     return true;
   }
@@ -632,10 +656,6 @@ class EditFarmProvider with ChangeNotifier {
   }
 
   // ==================================================================================
-  // FARM DATA LOADING & PROCESSING
-  // ==================================================================================
-
-  // ==================================================================================
   // POLYGON DRAWING INTERFACE
   // ==================================================================================
 
@@ -675,9 +695,7 @@ class EditFarmProvider with ChangeNotifier {
                       Text(
                         'Farm size in hectares',
                         style: TextStyle(
-                          color: Theme.of(
-                            addFarmScreenContext,
-                          ).colorScheme.onSurface,
+                          color: Theme.of(addFarmScreenContext).colorScheme.onSurface,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -685,9 +703,7 @@ class EditFarmProvider with ChangeNotifier {
                       Text(
                         '${area.truncateToDecimalPlaces(6).toString()} ha',
                         style: TextStyle(
-                          color: Theme.of(
-                            addFarmScreenContext,
-                          ).colorScheme.onSurface,
+                          color: Theme.of(addFarmScreenContext).colorScheme.onSurface,
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),
@@ -703,168 +719,6 @@ class EditFarmProvider with ChangeNotifier {
       ),
     );
   }
-
-// ==================================================================================
-// FARM SUBMISSION OPERATIONS
-// ==================================================================================
-
-// handleAddFarm() async {
-//   final globalProvider = Provider.of<GlobalProvider>(addFarmScreenContext, listen: false);
-//   final homeProvider = Provider.of<HomeProvider>(addFarmScreenContext, listen: false);
-//
-//   polygon!.points.add(polygon!.points.first);
-//
-//   var boundaryCoordinates = polygon!.points
-//       .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
-//       .toList();
-//
-//   globals.startWait(addFarmScreenContext);
-//
-//   try {
-//     DateTime now = DateTime.now();
-//     String formattedReportingDate = DateFormat('yyyy-MM-dd').format(now);
-//
-//     Farm farmData = Farm(
-//       uid: const Uuid().v4(),
-//       agent: globalProvider.userInfo.value.userId!,
-//       cocobod_id: cocobodIDController?.text.trim(),
-//       farmboundary:
-//       Uint8List.fromList(utf8.encode(jsonEncode(boundaryCoordinates))),
-//       farmer: farmerFromServer!.farmerId,
-//       farmArea: double.parse(farmAreaTC!.text.trim()),
-//       registrationDate: formattedReportingDate,
-//       status: SubmissionStatus.submitted,
-//       societyCode: society?.societyCode,
-//     );
-//
-//     Map<String, dynamic> data = farmData.toJson();
-//     data.remove('status');
-//     data.remove('societyCode');
-//
-//     debugPrint("FARM DATA :::::: ${data.toString()}");
-//
-//     var postResult = await farmerApiInterface.saveFarm(farmData, data);
-//
-//     if (postResult['status'] == RequestStatus.True ||
-//         postResult['status'] == RequestStatus.Exist ||
-//         postResult['status'] == RequestStatus.NoInternet) {
-//       await generalCocoaRehabApiInterface.loadAssignedFarms();
-//
-//       globals.endWait(addFarmScreenContext);
-//       Navigator.of(addFarmScreenContext).pop();
-//
-//       globals.showSecondaryDialog(
-//         context: homeProvider.homeScreenContext,
-//         content: Text(
-//           postResult['msg'],
-//           style: const TextStyle(fontSize: 13),
-//           textAlign: TextAlign.center,
-//         ),
-//         status: AlertDialogStatus.success,
-//         okayTap: () => Navigator.of(homeProvider.homeScreenContext).pop(),
-//       );
-//     } else if (postResult['status'] == RequestStatus.False) {
-//       globals.endWait(addFarmScreenContext);
-//
-//       globals.showSecondaryDialog(
-//         context: addFarmScreenContext,
-//         content: Text(
-//           postResult['msg'],
-//           style: const TextStyle(fontSize: 13),
-//           textAlign: TextAlign.center,
-//         ),
-//         // status: AlertDialogStatus.error,
-//       );
-//     }
-//   } catch (e) {
-//     globals.endWait(addFarmScreenContext);
-//     print("Error submitting farm: $e");
-//
-//     globals.showSecondaryDialog(
-//       context: addFarmScreenContext,
-//       content: const Text(
-//         'An error occurred while submitting the farm. Please try again.',
-//         style: TextStyle(fontSize: 13),
-//         textAlign: TextAlign.center,
-//       ),
-//       // status: AlertDialogStatus.error,
-//     );
-//   }
-// }
-
-// ==================================================================================
-// OFFLINE FARM STORAGE
-// ==================================================================================
-
-// handleSaveOfflineFarm() async {
-//   final globalProvider = Provider.of<GlobalProvider>(addFarmScreenContext, listen: false);
-//   final homeProvider = Provider.of<HomeProvider>(addFarmScreenContext, listen: false);
-//
-//   polygon!.points.add(polygon!.points.first);
-//
-//   var boundaryCoordinates = polygon!.points
-//       .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
-//       .toList();
-//
-//   globals.startWait(addFarmScreenContext);
-//
-//   try {
-//     DateTime now = DateTime.now();
-//     String formattedReportingDate = DateFormat('yyyy-MM-dd').format(now);
-//
-//     Farm farmData = Farm(
-//       // uid: const Uuid().v4(),
-//       // agent: globalProvider.userInfo.value.userId!,
-//       // cocobod_id: cocobodIDController?.text.trim(),
-//       // farmboundary:
-//       // Uint8List.fromList(utf8.encode(jsonEncode(boundaryCoordinates))),
-//       // farmer: farmerFromServer!.farmerId,
-//       // farmArea: double.parse(farmAreaTC!.text.trim()),
-//       // registrationDate: formattedReportingDate,
-//       // status: SubmissionStatus.pending,
-//       // societyCode: society?.societyCode,
-//     );
-//
-//     Map<String, dynamic> data = farmData.toJson();
-//     data.remove('status');
-//     data.remove('societyCode');
-//
-//     final farmDao = globalProvider.database!.farmDao;
-//     await farmDao.insertFarm(farmData);
-//
-//     globals.endWait(addFarmScreenContext);
-//
-//     Navigator.of(addFarmScreenContext).pop(result: {'farm': farmData, 'submitted': false});
-//
-//     globals.showSecondaryDialog(
-//       context: homeProvider.homeScreenContext,
-//       content: const Text(
-//         'Farm Record saved',
-//         style: TextStyle(fontSize: 13),
-//         textAlign: TextAlign.center,
-//       ),
-//       // status: AlertDialogStatus.success,
-//       okayTap: () => Navigator.of(homeProvider.homeScreenContext).pop(),
-//     );
-//   } catch (e) {
-//     globals.endWait(addFarmScreenContext);
-//     print("Error saving offline farm: $e");
-//
-//     globals.showSecondaryDialog(
-//       context: addFarmScreenContext,
-//       content: const Text(
-//         'An error occurred while saving the farm. Please try again.',
-//         style: TextStyle(fontSize: 13),
-//         textAlign: TextAlign.center,
-//       ),
-//       status: AlertDialogStatus.error,
-//     );
-//   }
-// }
-
-// ==================================================================================
-// CLEANUP
-// ==================================================================================
 }
 
 class MaximumAccuracy {

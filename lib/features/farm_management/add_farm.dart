@@ -14,42 +14,137 @@ class AddFarmScreen extends StatefulWidget {
 }
 
 class _AddFarmScreenState extends State<AddFarmScreen> {
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    // init provider
+    final provider = Provider.of<AddFarmProvider>(context, listen: false);
+    provider.addFarmScreenContext = context;
+    provider.autoFillCoordinates();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Add Farm")),
-      body: ChangeNotifierProvider(
-        create: (context) => AddFarmProvider(),
-        child: Consumer<AddFarmProvider>(
-          builder: (context, farmProvider, child) {
-            farmProvider.addFarmScreenContext = context;
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    // _buildProjectIDDropdown(farmProvider),
+      body: Consumer<AddFarmProvider>(
+        builder: (context, farmProvider, child) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15.0),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+
+                    // GPS Coordinates Section
+                    _buildSectionHeader("GPS Coordinates"),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTitleAndField(
+                            "Latitude",
+                            farmProvider.latitudeController,
+                            keyboardType: TextInputType.none,
+                            enabled: false
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildTitleAndField(
+                            "Longitude",
+                            farmProvider.longitudeController,
+                            keyboardType: TextInputType.none,
+                            enabled: false
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Farm Basic Information Section
+                    _buildSectionHeader("Farm Basic Information"),
                     _buildTitleAndField(
-                      "Visit ID / Reference Number",
-                      farmProvider.visitIdController,
+                      "Farm Size (hectares) - computed after mapping",
+                      farmProvider.farmSizeController,
+                      keyboardType: TextInputType.none,
+                      enabled: false
+                    ),
+                    _buildTitleAndField(
+                      "Crop Type",
+                      farmProvider.cropTypeController,
+                    ),
+                    _buildTitleAndField(
+                      "Variety / Breed",
+                      farmProvider.varietyBreedController,
                     ),
                     DateField(
-                      label: 'Harvest date',
+                      label: 'Date of Planting',
                       onDateSelected: (date) {
-                        farmProvider.setHarvestDate(date);
-                        debugPrint('Selected date: $date');
+                        farmProvider.setPlantingDate(date);
                       },
                     ),
+                    _buildTitleAndField(
+                      "Planting Density / Spacing",
+                      farmProvider.plantingDensityController,
+                    ),
+
+                    // Labour Information Section
+                    _buildSectionHeader("Labour Information"),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTitleAndField(
+                            "Total Labour Hired",
+                            farmProvider.labourHiredController,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildTitleAndField(
+                            "Male Workers",
+                            farmProvider.maleWorkersController,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildTitleAndField(
+                            "Female Workers",
+                            farmProvider.femaleWorkersController,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Yield Information Section
+                    _buildSectionHeader("Yield Information"),
+                    _buildTitleAndField(
+                      "Estimated Yield",
+                      farmProvider.estimatedYieldController,
+                    ),
+                    _buildTitleAndField(
+                      "Yields in Previous Seasons",
+                      farmProvider.previousYieldController,
+                      maxLines: 2,
+                    ),
+                    DateField(
+                      label: 'Harvest Date',
+                      onDateSelected: (date) {
+                        farmProvider.setHarvestDate(date);
+                      },
+                    ),
+
+                    // Secondary Data Section
+                    _buildSectionHeader("Secondary Data"),
                     _buildTitleAndField(
                       "Main Buyers",
                       farmProvider.mainBuyersController,
                     ),
-                    _buildTitleAndField(
-                      "Farm Boundary Polygon (Yes/No)",
-                      farmProvider.farmBoundaryPolygonController,
-                    ),
+                    _buildFarmBoundaryToggle(farmProvider),
                     _buildTitleAndField(
                       "Land Use Classification",
                       farmProvider.landUseClassificationController,
@@ -59,7 +154,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                       farmProvider.accessibilityController,
                     ),
                     _buildTitleAndField(
-                      "Proximity to Processing facility",
+                      "Proximity to Processing Facility",
                       farmProvider.proximityToProcessingFacilityController,
                     ),
                     _buildTitleAndField(
@@ -74,6 +169,19 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                       "Value Chain Linkages",
                       farmProvider.valueChainLinkagesController,
                     ),
+
+                    // Visit Information Section
+                    _buildSectionHeader("Visit Information"),
+                    _buildTitleAndField(
+                      "Visit ID / Reference Number",
+                      farmProvider.visitIdController,
+                    ),
+                    DateField(
+                      label: 'Date of Visit',
+                      onDateSelected: (date) {
+                        farmProvider.setVisitDate(date);
+                      },
+                    ),
                     _buildTitleAndField(
                       "Officer Name",
                       farmProvider.officerNameController,
@@ -82,6 +190,9 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                       "Officer ID",
                       farmProvider.officerIdController,
                     ),
+
+                    // Assessment Section
+                    _buildSectionHeader("Assessment"),
                     _buildTitleAndField(
                       "Observations",
                       farmProvider.observationsController,
@@ -95,6 +206,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                     _buildTitleAndField(
                       "Infrastructure Identified",
                       farmProvider.infrastructureIdentifiedController,
+                      maxLines: 2,
                     ),
                     _buildTitleAndField(
                       "Recommended Actions",
@@ -106,14 +218,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                       farmProvider.followUpStatusController,
                     ),
 
-                    const SizedBox(height: 10),
-                    _buildTitleAndField(
-                      enabled: false,
-                      keyboardType: TextInputType.number,
-                      "Farm Size",
-                      farmProvider.farmSizeController,
-                    ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 20),
                     _buildMapFarmButton(farmProvider),
                     const SizedBox(height: 20),
                     _buildActionButtons(farmProvider),
@@ -124,11 +229,62 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
             );
           },
         ),
+
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 20, bottom: 10),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue,
+        ),
       ),
     );
   }
 
-
+  Widget _buildFarmBoundaryToggle(AddFarmProvider farmProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Farm Boundary Polygon"),
+        const SizedBox(height: 5),
+        Row(
+          children: [
+            Expanded(
+              child: ListTile(
+                title: const Text('Yes'),
+                leading: Radio<bool>(
+                  value: true,
+                  groupValue: farmProvider.hasFarmBoundaryPolygon,
+                  onChanged: (bool? value) {
+                    farmProvider.setFarmBoundaryPolygon(value ?? false);
+                  },
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListTile(
+                title: const Text('No'),
+                leading: Radio<bool>(
+                  value: false,
+                  groupValue: farmProvider.hasFarmBoundaryPolygon,
+                  onChanged: (bool? value) {
+                    farmProvider.setFarmBoundaryPolygon(value ?? false);
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
 
   Widget _buildMapFarmButton(AddFarmProvider farmProvider) {
     return PrimaryButton(
@@ -222,18 +378,19 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
   }
 
   Widget _buildTitleAndField(
-    String title,
-    TextEditingController controller, {
-      int maxLines = 1,
-    TextInputType keyboardType = TextInputType.text,
-    bool enabled = true,
-  }) {
+      String title,
+      TextEditingController controller, {
+        int maxLines = 1,
+        TextInputType keyboardType = TextInputType.text,
+        bool enabled = true,
+      }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title),
         const SizedBox(height: 5),
         CustomTextField(
+          fillColor: enabled? null : Colors.grey.shade200,
           maxLines: maxLines,
           enabled: enabled,
           keyboardType: keyboardType,
@@ -244,42 +401,4 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
       ],
     );
   }
-
-
-  // Widget _buildProjectIDDropdown(AddFarmProvider farmProvider) {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       const Text("Project ID"),
-  //       const SizedBox(height: 5),
-  //       Container(
-  //         padding: const EdgeInsets.symmetric(horizontal: 12),
-  //         decoration: BoxDecoration(
-  //           color: Theme.of(context).colorScheme.surface,
-  //           border: Border.all(color: Colors.grey.withOpacity(0.5)),
-  //           borderRadius: BorderRadius.circular(8),
-  //         ),
-  //         child: DropdownButton<String>(
-  //           dropdownColor: Theme.of(context).colorScheme.surface,
-  //           value: farmProvider.projectIDs.contains(farmProvider.selectedProjectID)
-  //               ? farmProvider.selectedProjectID
-  //               : null,
-  //           onChanged: (String? newValue) {
-  //             farmProvider.setSelectedProject(newValue);
-  //           },
-  //           items: farmProvider.projectIDs.map<DropdownMenuItem<String>>((String region) {
-  //             return DropdownMenuItem<String>(
-  //               value: region,
-  //               child: Text(region),
-  //             );
-  //           }).toList(),
-  //           isExpanded: true,
-  //           underline: const SizedBox(),
-  //           hint: const Text('Select project id', style: TextStyle(color: Colors.grey),),
-  //         ),
-  //       ),
-  //       const SizedBox(height: 10),
-  //     ],
-  //   );
-  // }
 }
