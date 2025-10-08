@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
@@ -10,6 +11,7 @@ import '../../models/district_model.dart';
 import '../../models/projects_model.dart';
 import '../../models/region_model.dart';
 import '../../models/server_models/farmers_model/farmers_from_server.dart';
+import '../../models/server_models/farms/farms.dart';
 import '../../models/server_models/secondary_crops_model/secondary_crops_model.dart';
 import '../../models/user_model.dart';
 import '../database/database_helper.dart';
@@ -304,31 +306,74 @@ class APIService {
   }
 
   // fetch farmers from server
-  Future<dynamic> fetchFarmersFromServer() async {
+  Future<({List allFarms, List allSecondaryCrops, List farmers})> fetchFarmersFromServer() async {
     debugPrint("Fetching farmers from server...");
-    final responseData = await _makeRequest('GET', Uri.parse(URL.farmers));
 
-    final data = responseData["data"];
-    final dataFarms = responseData["data"]["farms"];
-    final secCrop = responseData["data"]["secondary_crops"];
+    try {
+      final responseData = await _makeRequest('GET', Uri.parse(URL.farmers));
 
-    debugPrint("THE FARMER RES DATA SEC CROP::::::::::: $secCrop");
-    final secondaryCrops = (data as List)
-        .map((farmerJson) => SecondaryCropModel.fromJson(farmerJson))
-        .toList();
+      // Handle the API response structure with status and msg fields
+      if (responseData['status'] != 1) {
+        final errorMsg = responseData['msg']?.toString() ?? 'Unknown error';
+        debugPrint("Server returned error status: $errorMsg");
+        throw Exception('Failed to fetch farmers: $errorMsg');
+      }
 
-    final farmers = (data)
-        .map((farmerJson) => Farmer.fromMap(farmerJson))
-        .toList();
+      final data = responseData["data"] as List<dynamic>? ?? [];
 
-    final farms = (dataFarms as List)
-        .map((farmJson) => Farm.fromMap(farmJson))
-        .toList();
+      if (data.isEmpty) {
+        debugPrint("No farmer data received from server");
+        return (farmers: [], allFarms: [], allSecondaryCrops: []);
+      }
 
-    debugPrint("THE FARMER RES DATA ::::::::::: $responseData");
+      final farmers = <FarmerFromServerModel>[];
+      final allFarms = <FarmFromServer>[];
+      final allSecondaryCrops = <String>{}.toList(); // Use Set to avoid duplicates
 
+      for (final farmerJson in data) {
+        try {
+          debugPrint("Processing farmer ID: ${farmerJson['id']}");
+
+          final farmer = FarmerFromServerModel.fromJson(farmerJson);
+          farmers.add(farmer);
+
+          // Extract farms
+          allFarms.addAll(farmer.farms);
+
+          // Extract secondary crops and remove duplicates
+          final secondaryCrops = farmer.secondaryCrops.where((crop) => crop.isNotEmpty).toList();
+          allSecondaryCrops.addAll(secondaryCrops);
+
+          // delete existing data for new one
+          DatabaseHelper().deleteAllFarmersWithRelations();
+          DatabaseHelper().bulkInsertFarmersWithRelations(farmers);
+
+          debugPrint("Farmer ${farmer.firstName} ${farmer.lastName} has ${farmer.farms.length} farms and ${secondaryCrops.length} secondary crops");
+        } catch (e) {
+          debugPrint("Error processing farmer data ${farmerJson['id']}: $e");
+          // Continue processing other farmers even if one fails
+          continue;
+        }
+      }
+
+      // Remove duplicate secondary crops and sort
+      allSecondaryCrops
+        ..toSet().toList() // Remove duplicates
+        ..sort();
+
+      debugPrint("Successfully processed ${farmers.length} farmers, "
+          "${allFarms.length} farms, and ${allSecondaryCrops.length} unique secondary crops");
+
+      return (
+      farmers: farmers,
+      allFarms: allFarms,
+      allSecondaryCrops: allSecondaryCrops
+      );
+    } catch (e) {
+      debugPrint("Error fetching farmers from server: $e");
+      rethrow;
+    }
   }
-
   /// Fetch and save all projects
   Future<dynamic> fetchAndSaveProjects() async {
     debugPrint("Fetching projects...");

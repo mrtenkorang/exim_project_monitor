@@ -116,8 +116,8 @@ class _FarmHistoryViewState extends State<FarmHistoryView> {
             },
             child: const TabBarView(
               children: [
-                FarmList(isPending: true),
-                FarmList(isPending: false),
+                _FarmList(isPending: true),
+                _FarmList(isPending: false),
               ],
             ),
           ),
@@ -126,10 +126,10 @@ class _FarmHistoryViewState extends State<FarmHistoryView> {
   }
 }
 
-class FarmList extends StatelessWidget {
+class _FarmList extends StatelessWidget {
   final bool isPending;
   
-  const FarmList({
+  const _FarmList({
     super.key,
     required this.isPending,
   });

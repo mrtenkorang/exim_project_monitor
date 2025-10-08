@@ -4,7 +4,7 @@ import 'package:exim_project_monitor/features/spatial/spatial.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/models/user_model.dart';
-import '../farmers/farmer_list_screen.dart';
+import '../farmer_management/farmers_list/farmer_list_screen.dart';
 
 class ScreenWrapper extends StatefulWidget {
   const ScreenWrapper({super.key});

@@ -38,10 +38,9 @@ dependencies:
   flutter_svg: ^2.0.10+1
   
   # Maps & Location
-
   geolocator: ^11.1.0
-  latlong2: ^0.9.0
   geocoding: ^2.1.1
+  latlong2: ^0.9.0
   
   # State Management
   provider: ^6.1.1

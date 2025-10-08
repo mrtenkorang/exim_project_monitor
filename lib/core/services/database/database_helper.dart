@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:exim_project_monitor/core/models/server_models/secondary_crops_model/secondary_crops_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:sqflite/sqflite.dart';
@@ -62,7 +64,7 @@ class DatabaseHelper {
   // Districts table columns
   static const String districtNameColumn = 'district';
   static const String districtCodeColumn = 'district_code';
-  static const String regionNameColumn = 'region_name';
+  static const String regionNameColumn = 'region';
 
   // Farms table columns
   static const String columnProjectId = 'projectId';
@@ -91,13 +93,17 @@ class DatabaseHelper {
   // Farmers table columns
   static const String columnFarmerName = 'name';
   static const String columnPhoneNumber = 'phoneNumber';
+  static const String columnPhoneNumberr = 'phone_number';
   static const String columnDistrictName = 'districtName';
+  static const String columnDistrictNamee = 'district_name';
   static const String columnFarmerIdNumber = 'farmerIdNumber';
   static const String columnGender = 'gender';
   static const String columnDateOfBirth = 'dateOfBirth';
+  static const String columnDateOfBirthh = 'date_of_birth';
   static const String columnPhotoPath = 'photoPath';
   static const String columnCommunity = 'community';
   static const String columnBusinessName = 'businessName';
+  static const String columnBusinessNamee = 'business_name';
   static const String columnCropType = 'cropType';
   static const String columnVarietyBreed = 'varietyBreed';
   static const String columnPlantingDate = 'plantingDate';
@@ -127,6 +133,11 @@ class DatabaseHelper {
   static const String columnServerHarvestDate = 'harvest_date';
   static const String columnAddress = 'address';
   static const String columnRegionName = 'region_name';
+
+  static const String columnSecondaryCrops = 'secondary_crops';
+  static const String columnFarmsCount = 'farms_count';
+  static const String columnServerCreatedAt = 'created_at';
+  static const String columnServerUpdatedAt = 'updated_at';
 
   // Private constructor
   DatabaseHelper._internal();
@@ -186,6 +197,52 @@ class DatabaseHelper {
       )
     ''');
 
+    // await db.execute('''
+    //   CREATE TABLE $tableFarmersFarmsFromServer (
+    //     id INTEGER PRIMARY KEY,
+    //     farmer INTEGER NOT NULL,
+    //     farmer_name TEXT NOT NULL,
+    //     farmer_national_id TEXT,
+    //     name TEXT NOT NULL,
+    //     farm_code TEXT NOT NULL,
+    //     project INTEGER,
+    //     project_name TEXT,
+    //     main_buyers TEXT,
+    //     land_use_classification TEXT,
+    //     has_farm_boundary_polygon INTEGER DEFAULT 0,
+    //     accessibility TEXT,
+    //     proximity_to_processing_plants TEXT,
+    //     service_provider TEXT,
+    //     farmer_groups_affiliated TEXT,
+    //     value_chain_linkages TEXT,
+    //     visit_id TEXT,
+    //     officer INTEGER,
+    //     officer_name TEXT,
+    //     observation TEXT,
+    //     issues_identified TEXT,
+    //     infrastructure_identified TEXT,
+    //     recommended_actions TEXT,
+    //     follow_up_actions TEXT,
+    //     area_hectares REAL,
+    //     soil_type TEXT,
+    //     irrigation_type TEXT,
+    //     irrigation_coverage REAL,
+    //     boundary_coordinates TEXT,
+    //     latitude REAL,
+    //     longitude REAL,
+    //     geom TEXT,
+    //     altitude REAL,
+    //     slope REAL,
+    //     status TEXT,
+    //     registration_date TEXT,
+    //     last_visit_date TEXT,
+    //     validation_status INTEGER DEFAULT 0,
+    //     created_at TEXT,
+    //     updated_at TEXT,
+    //     UNIQUE(farm_code)
+    //   )
+    // ''');
+
     await db.execute('''
       CREATE TABLE $tableFarmersFarmsFromServer (
         id INTEGER PRIMARY KEY,
@@ -193,7 +250,7 @@ class DatabaseHelper {
         farmer_name TEXT NOT NULL,
         farmer_national_id TEXT,
         name TEXT NOT NULL,
-        farm_code TEXT NOT NULL,
+        farm_code TEXT NOT NULL UNIQUE,
         project INTEGER,
         project_name TEXT,
         main_buyers TEXT,
@@ -216,7 +273,7 @@ class DatabaseHelper {
         soil_type TEXT,
         irrigation_type TEXT,
         irrigation_coverage REAL,
-        boundary_coordinates TEXT,
+        boundary_coordinates TEXT, -- Store as JSON string
         latitude REAL,
         longitude REAL,
         geom TEXT,
@@ -228,17 +285,44 @@ class DatabaseHelper {
         validation_status INTEGER DEFAULT 0,
         created_at TEXT,
         updated_at TEXT,
-        UNIQUE(farm_code)
+        FOREIGN KEY (farmer) REFERENCES $tableFarmersFromServer($columnId) ON DELETE CASCADE
       )
     ''');
 
     await db.execute('''
-        CREATE TABLE $tableSecondaryCrops (
-        id INTEGER PRIMARY KEY,
-          cropName TEXT NOT NULL,
-          farmerId INTEGER NOT NULL
-        )
-      ''');
+      CREATE TABLE $tableSecondaryCrops (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        crop_name TEXT NOT NULL,
+        farmer_id INTEGER NOT NULL,
+        FOREIGN KEY (farmer_id) REFERENCES $tableFarmersFromServer($columnId) ON DELETE CASCADE
+      )
+    ''');
+
+    // await db.execute(
+    //   'CREATE INDEX idx_farmers_server_national_id ON $tableFarmersFromServer($columnNationalId)',
+    // );
+    // await db.execute(
+    //   'CREATE INDEX idx_farmers_server_phone ON $tableFarmersFromServer($columnPhoneNumber)',
+    // );
+    // await db.execute(
+    //   'CREATE INDEX idx_farms_farmer_id ON $tableFarmersFarmsFromServer(farmer)',
+    // );
+    // await db.execute(
+    //   'CREATE INDEX idx_farms_farm_code ON $tableFarmersFarmsFromServer(farm_code)',
+    // );
+    // await db.execute(
+    //   'CREATE INDEX idx_secondary_crops_farmer_id ON $tableSecondaryCrops(farmer_id)',
+    // );
+
+
+
+  // await db.execute('''
+    //     CREATE TABLE $tableSecondaryCrops (
+    //     id INTEGER PRIMARY KEY,
+    //       cropName TEXT NOT NULL,
+    //       farmerId INTEGER NOT NULL
+    //     )
+    //   ''');
 
     // Create farmers table
     await db.execute('''
@@ -300,26 +384,58 @@ class DatabaseHelper {
       ''');
 
     // Create farmers_from_server table
+    // await db.execute('''
+    //   CREATE TABLE $tableFarmersFromServer (
+    //     $columnId INTEGER PRIMARY KEY,
+    //     $columnFirstName TEXT NOT NULL,
+    //     $columnLastName TEXT NOT NULL,
+    //     $columnPhoneNumber TEXT NOT NULL,
+    //     $columnEmail TEXT,
+    //     $columnDistrictName TEXT NOT NULL,
+    //     $columnRegionName TEXT NOT NULL,
+    //     $columnGender TEXT NOT NULL,
+    //     $columnDateOfBirth TEXT NOT NULL,
+    //     $columnAddress TEXT,
+    //     $columnBankAccountNumber TEXT,
+    //     $columnBankName TEXT,
+    //     $columnNationalId TEXT NOT NULL UNIQUE,
+    //     $columnYearsOfExperience INTEGER,
+    //     $columnPrimaryCrop TEXT,
+    //     $columnCooperativeMembership TEXT,
+    //     $columnExtensionServices INTEGER NOT NULL,
+    //     $columnBusinessName TEXT,
+    //     $columnCommunity TEXT,
+    //     $columnServerCropType TEXT,
+    //     $columnServerVariety TEXT,
+    //     $columnServerPlantingDate TEXT,
+    //     $columnServerLabourHired INTEGER,
+    //     $columnServerEstimatedYield TEXT,
+    //     $columnServerYieldInPreSeason TEXT,
+    //     $columnServerHarvestDate TEXT
+    //   )
+    // ''');
+
     await db.execute('''
       CREATE TABLE $tableFarmersFromServer (
         $columnId INTEGER PRIMARY KEY,
         $columnFirstName TEXT NOT NULL,
         $columnLastName TEXT NOT NULL,
-        $columnPhoneNumber TEXT NOT NULL,
+        $columnPhoneNumberr TEXT NOT NULL,
         $columnEmail TEXT,
-        $columnDistrictName TEXT NOT NULL,
+        $columnDistrictNamee TEXT NOT NULL,
         $columnRegionName TEXT NOT NULL,
         $columnGender TEXT NOT NULL,
-        $columnDateOfBirth TEXT NOT NULL,
+        $columnDateOfBirthh TEXT NOT NULL,
         $columnAddress TEXT,
         $columnBankAccountNumber TEXT,
         $columnBankName TEXT,
         $columnNationalId TEXT NOT NULL UNIQUE,
         $columnYearsOfExperience INTEGER,
         $columnPrimaryCrop TEXT,
+        $columnSecondaryCrops TEXT, -- Store as JSON string
         $columnCooperativeMembership TEXT,
         $columnExtensionServices INTEGER NOT NULL,
-        $columnBusinessName TEXT,
+        $columnBusinessNamee TEXT,
         $columnCommunity TEXT,
         $columnServerCropType TEXT,
         $columnServerVariety TEXT,
@@ -327,16 +443,20 @@ class DatabaseHelper {
         $columnServerLabourHired INTEGER,
         $columnServerEstimatedYield TEXT,
         $columnServerYieldInPreSeason TEXT,
-        $columnServerHarvestDate TEXT
+        $columnServerHarvestDate TEXT,
+        $columnFarmsCount INTEGER DEFAULT 0,
+        $columnServerCreatedAt TEXT,
+        $columnServerUpdatedAt TEXT
       )
     ''');
+
 
     // Create index for better query performance
     await db.execute(
       'CREATE INDEX idx_farmers_server_national_id ON $tableFarmersFromServer($columnNationalId)',
     );
     await db.execute(
-      'CREATE INDEX idx_farmers_server_phone ON $tableFarmersFromServer($columnPhoneNumber)',
+      'CREATE INDEX idx_farmers_server_phone ON $tableFarmersFromServer($columnPhoneNumberr)',
     );
   }
 
@@ -845,10 +965,10 @@ class DatabaseHelper {
     return results.length;
   }
 
-  Future<int> deleteAllFarmersFromServer() async {
-    final db = await database;
-    return await db.delete(tableFarmersFromServer);
-  }
+  // Future<int> deleteAllFarmersFromServer() async {
+  //   final db = await database;
+  //   return await db.delete(tableFarmersFromServer);
+  // }
 
   Future<List<FarmerFromServerModel>> getAllFarmersFromServer() async {
     final db = await database;
@@ -903,5 +1023,436 @@ class DatabaseHelper {
     );
   }
 
+  /// Bulk insert farmers with their farms and secondary crops
+  Future<int> bulkInsertFarmersWithRelations(List<FarmerFromServerModel> farmers) async {
+    final db = await database;
+    final batch = db.batch();
 
+    for (var farmer in farmers) {
+      // Convert secondary crops list to JSON string
+      final secondaryCropsJson = jsonEncode(farmer.secondaryCrops);
+
+      // Get the farmer data without the farms field
+      final farmerData = farmer.toJson()..remove('farms');
+      
+      // Insert farmer
+      batch.insert(
+        tableFarmersFromServer,
+        {
+          ...farmerData,
+          columnSecondaryCrops: secondaryCropsJson,
+          columnFarmsCount: farmer.farms.length,
+          columnServerCreatedAt: farmer.createdAt,
+          columnServerUpdatedAt: farmer.updatedAt,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      // Insert farms for this farmer
+      for (var farm in farmer.farms) {
+        final boundaryCoordinatesJson = farm.boundaryCoordinates != null
+            ? jsonEncode(farm.boundaryCoordinates)
+            : null;
+
+        batch.insert(
+          tableFarmersFarmsFromServer,
+          {
+            'id': farm.id,
+            'farmer': farmer.id,
+            'farmer_name': farm.farmerName,
+            'farmer_national_id': farm.farmerNationalId,
+            'name': farm.name,
+            'farm_code': farm.farmCode,
+            'project': farm.project,
+            'project_name': farm.projectName,
+            'main_buyers': farm.mainBuyers,
+            'land_use_classification': farm.landUseClassification,
+            'has_farm_boundary_polygon': farm.hasFarmBoundaryPolygon ? 1 : 0,
+            'accessibility': farm.accessibility,
+            'proximity_to_processing_plants': farm.proximityToProcessingPlants,
+            'service_provider': farm.serviceProvider,
+            'farmer_groups_affiliated': farm.farmerGroupsAffiliated,
+            'value_chain_linkages': farm.valueChainLinkages,
+            'visit_id': farm.visitId,
+            'officer': farm.officer,
+            'officer_name': farm.officerName,
+            'observation': farm.observation,
+            'issues_identified': farm.issuesIdentified,
+            'infrastructure_identified': farm.infrastructureIdentified,
+            'recommended_actions': farm.recommendedActions,
+            'follow_up_actions': farm.followUpActions,
+            'area_hectares': farm.areaHectares,
+            'soil_type': farm.soilType,
+            'irrigation_type': farm.irrigationType,
+            'irrigation_coverage': farm.irrigationCoverage,
+            'boundary_coordinates': boundaryCoordinatesJson,
+            'latitude': farm.latitude,
+            'longitude': farm.longitude,
+            'geom': farm.geom,
+            'altitude': farm.altitude,
+            'slope': farm.slope,
+            'status': farm.status,
+            'registration_date': farm.registrationDate,
+            'last_visit_date': farm.lastVisitDate,
+            'validation_status': farm.validationStatus ? 1 : 0,
+            'created_at': farm.createdAt,
+            'updated_at': farm.updatedAt,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+
+      // Insert secondary crops for this farmer
+      for (var crop in farmer.secondaryCrops) {
+        if (crop.isNotEmpty) {
+          batch.insert(
+            tableSecondaryCrops,
+            {
+              'crop_name': crop,
+              'farmer_id': farmer.id,
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+    }
+
+    final results = await batch.commit();
+    return results.length;
+  }
+
+
+  /// Fetches all farmers with detailed relationships and comprehensive statistics
+  Future<AllFarmersData> fetchAllFarmersData() async {
+    final db = await database;
+
+    try {
+      debugPrint('Fetching comprehensive farmers data...');
+
+      final farmers = await getAllFarmersFromServerWithRelations();
+
+      final allFarms = <FarmFromServer>[];
+      final allSecondaryCrops = <String>{};
+
+      // Additional collections for detailed analysis
+      final farmsByStatus = <String, List<FarmFromServer>>{};
+      final cropsByFarmer = <String, int>{};
+      final farmersByRegion = <String, List<FarmerFromServerModel>>{};
+
+      for (final farmer in farmers) {
+        // Collect all farms
+        allFarms.addAll(farmer.farms);
+
+        // Collect secondary crops
+        allSecondaryCrops.addAll(farmer.secondaryCrops.where((crop) => crop.isNotEmpty));
+
+        // Categorize farms by status
+        for (final farm in farmer.farms) {
+          farmsByStatus.putIfAbsent(farm.status, () => []).add(farm);
+        }
+
+        // Count crops per farmer
+        cropsByFarmer[farmer.nationalId] = farmer.secondaryCrops.length;
+
+        // Group farmers by region
+        farmersByRegion.putIfAbsent(farmer.regionName, () => []).add(farmer);
+      }
+
+      final uniqueSecondaryCrops = allSecondaryCrops.toList()..sort();
+
+      // Calculate comprehensive statistics
+      final statistics = <String, dynamic>{
+        'totalFarmers': farmers.length,
+        'totalFarms': allFarms.length,
+        'totalSecondaryCrops': allSecondaryCrops.length,
+        'farmersWithFarms': farmers.where((f) => f.farms.isNotEmpty).length,
+        'farmersWithoutFarms': farmers.where((f) => f.farms.isEmpty).length,
+        'farmsByStatus': {
+          for (var entry in farmsByStatus.entries)
+            entry.key: entry.value.length
+        },
+        'farmersByRegion': {
+          for (var entry in farmersByRegion.entries)
+            entry.key: entry.value.length
+        },
+        'topCrops': _getTopCrops(allSecondaryCrops.toList()),
+        'averageExperience': _calculateAverageExperience(farmers),
+        'extensionServiceAdoption': farmers.where((f) => f.extensionServices).length,
+        'cooperativeMembership': farmers.where((f) => f.cooperativeMembership.isNotEmpty).length,
+      };
+
+      debugPrint('Comprehensive data fetch completed successfully');
+
+      return AllFarmersData(
+        farmers: farmers,
+        allFarms: allFarms,
+        allSecondaryCrops: uniqueSecondaryCrops,
+        statistics: statistics,
+      );
+    } catch (e) {
+      debugPrint('Error fetching comprehensive farmers data: $e');
+      rethrow;
+    }
+  }
+
+// Helper methods for statistics
+  Map<String, int> _getTopCrops(List<String> crops) {
+    final cropCounts = <String, int>{};
+    for (final crop in crops) {
+      cropCounts[crop] = (cropCounts[crop] ?? 0) + 1;
+    }
+
+    final sortedCrops = cropCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Map.fromEntries(sortedCrops.take(10)); // Top 10 crops
+  }
+
+  double _calculateAverageExperience(List<FarmerFromServerModel> farmers) {
+    if (farmers.isEmpty) return 0.0;
+
+    final totalExperience = farmers.fold<int>(0, (sum, farmer) => sum + farmer.yearsOfExperience);
+    return totalExperience / farmers.length;
+  }
+
+
+  /// Optimized version that uses batch queries for better performance
+  Future<List<FarmerFromServerModel>> getAllFarmersFromServerWithRelations() async {
+    final db = await database;
+
+    try {
+      debugPrint('Fetching all farmers with relationships (optimized)...');
+
+      // Get all farmers, farms, and crops in parallel batch queries
+      final farmerMaps = await db.query(
+        tableFarmersFromServer,
+        orderBy: '$columnFirstName, $columnLastName',
+      );
+
+      if (farmerMaps.isEmpty) {
+        debugPrint('No farmers found in database');
+        return [];
+      }
+
+      final farmerIds = farmerMaps.map((map) => map[columnId] as int).toList();
+
+      // Get all farms for all farmers in one query
+      final farmMaps = await db.query(
+        tableFarmersFarmsFromServer,
+        where: 'farmer IN (${List.filled(farmerIds.length, '?').join(',')})',
+        whereArgs: farmerIds,
+        orderBy: 'farmer, name',
+      );
+
+      // Get all secondary crops for all farmers in one query
+      final cropMaps = await db.query(
+        tableSecondaryCrops,
+        where: 'farmer_id IN (${List.filled(farmerIds.length, '?').join(',')})',
+        whereArgs: farmerIds,
+      );
+
+      // Group farms and crops by farmer ID for efficient lookup
+      final farmsByFarmer = <int, List<Map<String, dynamic>>>{};
+      final cropsByFarmer = <int, List<String>>{};
+
+      for (final farmMap in farmMaps) {
+        final farmerId = farmMap['farmer'] as int;
+        farmsByFarmer.putIfAbsent(farmerId, () => []).add(farmMap);
+      }
+
+      for (final cropMap in cropMaps) {
+        final farmerId = cropMap['farmer_id'] as int;
+        final cropName = cropMap['crop_name'] as String;
+        cropsByFarmer.putIfAbsent(farmerId, () => []).add(cropName);
+      }
+
+      // Build the complete farmer objects
+      final farmers = <FarmerFromServerModel>[];
+
+      for (final farmerMap in farmerMaps) {
+        final farmerId = farmerMap[columnId] as int;
+        final farmsForFarmer = farmsByFarmer[farmerId] ?? [];
+        final cropsForFarmer = cropsByFarmer[farmerId] ?? [];
+
+        // Parse secondary crops - try JSON first, then fallback to crops table
+        List<String> secondaryCrops = [];
+        final secondaryCropsJson = farmerMap[columnSecondaryCrops] as String?;
+
+        if (secondaryCropsJson != null && secondaryCropsJson.isNotEmpty) {
+          try {
+            final dynamic decoded = jsonDecode(secondaryCropsJson);
+            if (decoded is List) {
+              secondaryCrops = List<String>.from(decoded.whereType<String>());
+            }
+          } catch (e) {
+            debugPrint('Error parsing secondary crops JSON for farmer $farmerId: $e');
+            secondaryCrops = cropsForFarmer;
+          }
+        } else {
+          secondaryCrops = cropsForFarmer;
+        }
+
+        // Parse farms
+        final farms = farmsForFarmer.map((map) => _parseFarmFromMap(map)).toList();
+
+        // Create farmer model
+        final farmer = FarmerFromServerModel(
+          id: farmerId,
+          firstName: farmerMap[columnFirstName] as String? ?? '',
+          lastName: farmerMap[columnLastName] as String? ?? '',
+          phoneNumber: farmerMap[columnPhoneNumberr] as String? ?? '',
+          email: farmerMap[columnEmail] as String? ?? '',
+          districtName: farmerMap[columnDistrictNamee] as String? ?? '',
+          regionName: farmerMap[columnRegionName] as String? ?? '',
+          gender: farmerMap[columnGender] as String? ?? '',
+          dateOfBirth: farmerMap[columnDateOfBirthh] as String? ?? '',
+          address: farmerMap[columnAddress] as String? ?? '',
+          bankAccountNumber: farmerMap[columnBankAccountNumber] as String? ?? '',
+          bankName: farmerMap[columnBankName] as String? ?? '',
+          nationalId: farmerMap[columnNationalId] as String? ?? '',
+          yearsOfExperience: farmerMap[columnYearsOfExperience] as int? ?? 0,
+          primaryCrop: farmerMap[columnPrimaryCrop] as String? ?? '',
+          secondaryCrops: secondaryCrops,
+          cooperativeMembership: farmerMap[columnCooperativeMembership] as String? ?? '',
+          extensionServices: (farmerMap[columnExtensionServices] as int? ?? 0) == 1,
+          businessName: farmerMap[columnBusinessName] as String? ?? '',
+          community: farmerMap[columnCommunity] as String? ?? '',
+          cropType: farmerMap[columnServerCropType] as String? ?? '',
+          variety: farmerMap[columnServerVariety] as String? ?? '',
+          plantingDate: farmerMap[columnServerPlantingDate] as String? ?? '',
+          labourHired: farmerMap[columnServerLabourHired] as int? ?? 0,
+          estimatedYield: farmerMap[columnServerEstimatedYield] as String? ?? '',
+          yieldInPreSeason: farmerMap[columnServerYieldInPreSeason] as String? ?? '',
+          harvestDate: farmerMap[columnServerHarvestDate] as String? ?? '',
+          farms: farms,
+          farmsCount: farmerMap[columnFarmsCount] as int? ?? farms.length,
+          createdAt: farmerMap[columnServerCreatedAt] as String? ?? '',
+          updatedAt: farmerMap[columnServerUpdatedAt] as String? ?? '',
+        );
+
+        farmers.add(farmer);
+      }
+
+      debugPrint('Optimized load complete: ${farmers.length} farmers, ${farmMaps.length} farms, ${cropMaps.length} crops');
+      return farmers;
+
+    } catch (e) {
+      debugPrint('Error in getAllFarmersFromServerWithRelations: $e');
+      rethrow;
+    }
+  }
+
+  /// Helper method to parse farm from map
+  FarmFromServer _parseFarmFromMap(Map<String, dynamic> map) {
+    List<List<double>>? boundaryCoordinates;
+    final boundaryJson = map['boundary_coordinates'] as String?;
+
+    if (boundaryJson != null && boundaryJson.isNotEmpty) {
+      try {
+        final List<dynamic> rawList = jsonDecode(boundaryJson);
+        boundaryCoordinates = rawList.map((innerList) {
+          if (innerList is List) {
+            return innerList.map((coord) {
+              if (coord is num) return coord.toDouble();
+              if (coord is String) return double.tryParse(coord) ?? 0.0;
+              return 0.0;
+            }).toList();
+          }
+          return <double>[];
+        }).toList();
+      } catch (e) {
+        debugPrint('Error parsing boundary coordinates for farm ${map['id']}: $e');
+      }
+    }
+
+    return FarmFromServer(
+      id: map['id'] as int,
+      farmer: map['farmer'] as int,
+      farmerName: map['farmer_name'] as String? ?? '',
+      farmerNationalId: map['farmer_national_id'] as String? ?? '',
+      name: map['name'] as String? ?? '',
+      farmCode: map['farm_code'] as String? ?? '',
+      project: map['project'] as int? ?? 0,
+      projectName: map['project_name'] as String? ?? '',
+      mainBuyers: map['main_buyers'] as String? ?? '',
+      landUseClassification: map['land_use_classification'] as String? ?? '',
+      hasFarmBoundaryPolygon: (map['has_farm_boundary_polygon'] as int? ?? 0) == 1,
+      accessibility: map['accessibility'] as String? ?? '',
+      proximityToProcessingPlants: map['proximity_to_processing_plants'] as String? ?? '',
+      serviceProvider: map['service_provider'] as String? ?? '',
+      farmerGroupsAffiliated: map['farmer_groups_affiliated'] as String? ?? '',
+      valueChainLinkages: map['value_chain_linkages'] as String? ?? '',
+      visitId: map['visit_id'] as String? ?? '',
+      officer: map['officer'] as int? ?? 0,
+      officerName: map['officer_name'] as String? ?? '',
+      observation: map['observation'] as String? ?? '',
+      issuesIdentified: map['issues_identified'] as String? ?? '',
+      infrastructureIdentified: map['infrastructure_identified'] as String? ?? '',
+      recommendedActions: map['recommended_actions'] as String? ?? '',
+      followUpActions: map['follow_up_actions'] as String? ?? '',
+      areaHectares: (map['area_hectares'] as num?)?.toDouble() ?? 0.0,
+      soilType: map['soil_type'] as String? ?? '',
+      irrigationType: map['irrigation_type'] as String? ?? '',
+      irrigationCoverage: (map['irrigation_coverage'] as num?)?.toDouble() ?? 0.0,
+      boundaryCoordinates: boundaryCoordinates,
+      latitude: (map['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (map['longitude'] as num?)?.toDouble() ?? 0.0,
+      geom: map['geom'] as String?,
+      altitude: (map['altitude'] as num?)?.toDouble() ?? 0.0,
+      slope: (map['slope'] as num?)?.toDouble() ?? 0.0,
+      status: map['status'] as String? ?? '',
+      registrationDate: map['registration_date'] as String? ?? '',
+      lastVisitDate: map['last_visit_date'] as String?,
+      validationStatus: (map['validation_status'] as int? ?? 0) == 1,
+      createdAt: map['created_at'] as String? ?? '',
+      updatedAt: map['updated_at'] as String? ?? '',
+    );
+  }
+
+  /// Delete all farmers, farms, and secondary crops in a single transaction
+  Future<void> deleteAllFarmersWithRelations() async {
+    final db = await database;
+
+    try {
+      debugPrint('Starting transaction to delete all farmers with relations...');
+
+      await db.transaction((txn) async {
+        // Delete in correct order to respect foreign key constraints
+        await txn.delete(tableSecondaryCrops);
+        debugPrint('Deleted secondary crops');
+
+        await txn.delete(tableFarmersFarmsFromServer);
+        debugPrint('Deleted farms');
+
+        await txn.delete(tableFarmersFromServer);
+        debugPrint('Deleted farmers');
+      });
+
+      debugPrint('Successfully deleted all farmers, farms, and secondary crops');
+    } catch (e) {
+      debugPrint('Error in transaction deleting all farmers with relations: $e');
+      rethrow;
+    }
+  }
+
+}
+
+/// Data class to hold the complete farmers data
+class AllFarmersData {
+  final List<FarmerFromServerModel> farmers;
+  final List<FarmFromServer> allFarms;
+  final List<String> allSecondaryCrops;
+  final Map<String, dynamic> statistics;
+
+  AllFarmersData({
+    required this.farmers,
+    required this.allFarms,
+    required this.allSecondaryCrops,
+    required this.statistics,
+  });
+
+  @override
+  String toString() {
+    return 'AllFarmersData(farmers: ${farmers.length}, farms: ${allFarms.length}, crops: ${allSecondaryCrops.length})';
+  }
 }

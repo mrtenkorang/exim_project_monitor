@@ -8,10 +8,9 @@ import 'package:exim_project_monitor/features/farmer_management/history/farmer_h
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-
-import '../../core/models/custom_user.dart';
+import '../farm_management/farm_list/farm_list.dart';
 import '../farm_management/history/farm_history.dart';
-import '../farmers/farmer_list_screen.dart';
+import '../farmer_management/farmers_list/farmer_list_screen.dart';
 import '../settings/profile/profile_screen.dart';
 import 'home_provider.dart';
 
@@ -111,7 +110,7 @@ Spacer(),
                                       GestureDetector(
                                         onTap: () async {
                                           final api = APIService();
-                                          await api.fetchAndSaveDistricts();
+                                          await api.fetchFarmersFromServer();
                                         },
                                         child: Icon(Icons.sync, color: theme.secondaryHeaderColor),
                                       )
@@ -184,7 +183,7 @@ Spacer(),
                       _handleResult(result);
                     },
                     onList: () async {
-                      // final result = await Get.to(() => FarmListScreen());
+                      final result = await Get.to(() => const FarmList());
                       // _handleResult(result);
                     },
                     onHistory: () async {
