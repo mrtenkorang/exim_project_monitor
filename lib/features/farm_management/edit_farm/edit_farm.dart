@@ -1,8 +1,10 @@
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:exim_project_monitor/core/widgets/custom_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/models/farm_model.dart';
+import '../../../core/models/server_models/farmers_model/farmers_from_server.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../widgets/date_field.dart';
 import 'edit_farm_provider.dart';
@@ -74,6 +76,10 @@ class _EditFarmScreenState extends State<EditFarmScreen> {
                         ),
                       ],
                     ),
+
+                    // Farmer Selection Section
+                    _buildSectionHeader("Farmer Information"),
+                    _buildFarmerDropdown(farmProvider),
 
                     // Farm Basic Information Section
                     _buildSectionHeader("Farm Basic Information"),
@@ -335,6 +341,292 @@ class _EditFarmScreenState extends State<EditFarmScreen> {
       onTap: () {
         farmProvider.usePolygonDrawingTool(context);
       },
+    );
+  }
+
+  Widget _buildFarmerDropdown(EditFarmProvider farmProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Select Farmer",
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownSearch<FarmerFromServerModel>(
+          items: (filter, infiniteScrollProps) async {
+            // Return the farmers list, optionally filtered
+            if (filter.isEmpty) {
+              return farmProvider.farmersFromServer;
+            }
+            final searchLower = filter.toLowerCase();
+            return farmProvider.farmersFromServer.where((farmer) {
+              return farmer.firstName.toLowerCase().contains(searchLower) ||
+                  farmer.lastName.toLowerCase().contains(searchLower) ||
+                  farmer.phoneNumber.toLowerCase().contains(searchLower) ||
+                  farmer.community.toLowerCase().contains(searchLower) ||
+                  farmer.districtName.toLowerCase().contains(searchLower);
+            }).toList();
+          },
+          selectedItem: farmProvider.selectedFarmer,
+          itemAsString: (FarmerFromServerModel farmer) =>
+          '${farmer.firstName} ${farmer.lastName} - ${farmer.phoneNumber}',
+          decoratorProps: DropDownDecoratorProps(
+            decoration: InputDecoration(
+              hintText: "Search and select farmer",
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade400),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade400),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2
+                ),
+              ),
+              suffixIcon: farmProvider.loadingFarmers
+                  ? const Padding(
+                padding: EdgeInsets.all(12.0),
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+                  : const Icon(Icons.arrow_drop_down),
+            ),
+          ),
+          popupProps: PopupProps.menu(
+            showSearchBox: true,
+            searchDelay: const Duration(milliseconds: 300),
+            searchFieldProps: TextFieldProps(
+              decoration: InputDecoration(
+                hintText: "Search by name, phone, or location",
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              ),
+            ),
+            itemBuilder: (context, farmer, isSelected, onTap) {
+              return Container(
+                margin: const EdgeInsets.symmetric(vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ListTile(
+                  selected: isSelected,
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    child: Text(
+                      farmer.firstName.isNotEmpty ? farmer.firstName[0].toUpperCase() : 'F',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    '${farmer.firstName} ${farmer.lastName}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        farmer.phoneNumber,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                      Text(
+                        '${farmer.community}, ${farmer.districtName}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: isSelected
+                      ? Icon(
+                    Icons.check_circle,
+                    color: Theme.of(context).colorScheme.primary,
+                  )
+                      : null,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+              );
+            },
+            emptyBuilder: (context, searchEntry) {
+              return Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.person_search,
+                      size: 64,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      farmProvider.farmerLoadError ?? 'No farmers found',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (searchEntry.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Try adjusting your search terms',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey.shade500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                    // if (farmProvider.farmerLoadError != null) ...[
+                    //   // const SizedBox(height: 16),
+                    //   // ElevatedButton.icon(
+                    //   //   onPressed: () => farmProvider.loadFarmFromServer(),
+                    //   //   icon: const Icon(Icons.refresh, size: 18),
+                    //   //   label: const Text('Retry Loading'),
+                    //   //   style: ElevatedButton.styleFrom(
+                    //   //     backgroundColor: Theme.of(context).colorScheme.primary,
+                    //   //     foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    //   //   ),
+                    //   // ),
+                    // ],
+                  ],
+                ),
+              );
+            },
+            loadingBuilder: (context, searchEntry) {
+              return const Padding(
+                padding: EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Loading farmers...'),
+                  ],
+                ),
+              );
+            },
+            containerBuilder: (context, popupWidget) {
+              return Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: popupWidget,
+              );
+            },
+          ),
+          onChanged: (FarmerFromServerModel? farmer) {
+            farmProvider.setSelectedFarmer(farmer);
+          },
+          compareFn: (item1, item2) => item1.id == item2.id,
+        ),
+
+        // Selected Farmer Display
+        if (farmProvider.selectedFarmer != null) ...[
+          const SizedBox(height: 12),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  child: Text(
+                    farmProvider.selectedFarmer!.firstName.isNotEmpty
+                        ? farmProvider.selectedFarmer!.firstName[0].toUpperCase()
+                        : 'F',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${farmProvider.selectedFarmer!.firstName} ${farmProvider.selectedFarmer!.lastName}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '📞 ${farmProvider.selectedFarmer!.phoneNumber}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        '📍 ${farmProvider.selectedFarmer!.community}, ${farmProvider.selectedFarmer!.districtName}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.close,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  onPressed: () => farmProvider.clearSelectedFarmer(),
+                  tooltip: 'Clear selection',
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
+      ],
     );
   }
 

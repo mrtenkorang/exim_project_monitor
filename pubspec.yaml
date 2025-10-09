@@ -101,6 +101,7 @@ dependencies:
   fluttertoast: ^9.0.0
   location: ^8.0.1
   font_awesome_flutter: ^10.9.1
+  dropdown_search: ^6.0.2
   
 dev_dependencies:
   flutter_test:

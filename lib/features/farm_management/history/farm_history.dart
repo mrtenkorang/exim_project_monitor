@@ -130,7 +130,6 @@ class _FarmList extends StatelessWidget {
   final bool isPending;
   
   const _FarmList({
-    super.key,
     required this.isPending,
   });
 
@@ -171,6 +170,7 @@ class _FarmList extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         itemCount: farms.length,
         itemBuilder: (context, index) {
+          debugPrint("THE FARM :::::::::::: ${farms[index].boundaryCoordinates}");
           final farm = farms[index];
           return _buildFarmCard(context, farm);
         },

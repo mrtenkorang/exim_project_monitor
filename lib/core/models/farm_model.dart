@@ -44,6 +44,7 @@ class Farm {
   final String estimatedYield;
   final String previousYield;
   final String harvestDate;
+  final int? farmerId;
 
   Farm({
     this.id,
@@ -67,6 +68,7 @@ class Farm {
     required this.followUpStatus,
     required this.farmSize,
     required this.location,
+    required this.farmerId,
     required this.isSynced,
     DateTime? createdAt,
     this.updatedAt,
@@ -77,6 +79,7 @@ class Farm {
     this.cropType = '',
     this.varietyBreed = '',
     this.plantingDate = '',
+
     this.plantingDensity = '',
     this.labourHired = 0,
     this.maleWorkers = 0,
@@ -101,6 +104,7 @@ class Farm {
 
     return {
       'id': id,
+      'farmer_id': farmerId,
       'projectId': projectId,
       'visitId': visitId,
       'dateOfVisit': dateOfVisit,
@@ -152,6 +156,7 @@ class Farm {
 
     return Farm(
       id: map['id'],
+      farmerId: map['farmer_id'] ?? 0,
       projectId: map['projectId'] ?? '',
       visitId: map['visitId'] ?? '',
       dateOfVisit: map['dateOfVisit'] ?? '',
@@ -233,6 +238,7 @@ class Farm {
     String? harvestDate,
   }) {
     return Farm(
+      farmerId: farmerId ?? this.farmerId,
       id: id ?? this.id,
       projectId: projectId ?? this.projectId,
       visitId: visitId ?? this.visitId,

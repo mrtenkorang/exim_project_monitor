@@ -14,6 +14,7 @@ import 'package:location/location.dart';
 import 'package:geolocator/geolocator.dart' as gl;
 
 import '../../../core/models/farm_model.dart';
+import '../../../core/models/server_models/farmers_model/farmers_from_server.dart';
 import '../../../core/services/database/database_helper.dart';
 import '../../../widgets/globals/globals.dart';
 
@@ -59,6 +60,56 @@ class EditFarmProvider with ChangeNotifier {
 
   void setFarmBoundaryPolygon(bool value) {
     _hasFarmBoundaryPolygon = value;
+    notifyListeners();
+  }
+
+  List<FarmerFromServerModel> _farmersFromServer = [];
+  FarmerFromServerModel? _selectedFarmer;
+  bool _loadingFarmers = false;
+  String? _farmerLoadError;
+
+  List<FarmerFromServerModel> get farmersFromServer => _farmersFromServer;
+  FarmerFromServerModel? get selectedFarmer => _selectedFarmer;
+  bool get loadingFarmers => _loadingFarmers;
+  String? get farmerLoadError => _farmerLoadError;
+
+  /// Load farmers from local database (farmers from server model)
+  // Future<void> loadFarmers() async {
+  //   _loadingFarmers = true;
+  //   _farmerLoadError = null;
+  //   notifyListeners();
+  //
+  //   try {
+  //     // Load farmers from server model stored in local database
+  //     _farmersFromServer = await _databaseHelper.getAllFarmersFromServerWithRelations();
+  //
+  //     debugPrint('Loaded ${_farmersFromServer.length} farmers from local database');
+  //
+  //     _loadingFarmers = false;
+  //     notifyListeners();
+  //   } catch (e, stackTrace) {
+  //     debugPrint('Error loading farmers from server: $e');
+  //     debugPrint('Stack trace: $stackTrace');
+  //     _loadingFarmers = false;
+  //     _farmerLoadError = 'Failed to load farmers';
+  //     notifyListeners();
+  //   }
+  // }
+
+  Future<void> getFarmerById() async {
+    farmer = await DatabaseHelper().getFarmerFromServerById(_selectedFarmer!.id);
+
+    notifyListeners();
+  }
+  /// Set the selected farmer
+  setSelectedFarmer(FarmerFromServerModel? farmer) {
+    _selectedFarmer = farmer;
+    notifyListeners();
+  }
+
+  /// Clear selected farmer
+  void clearSelectedFarmer() {
+    _selectedFarmer = null;
     notifyListeners();
   }
 
@@ -126,8 +177,14 @@ class EditFarmProvider with ChangeNotifier {
   int? _farmId;
   int? get farmId => _farmId;
 
-  void initFarmData(Farm farm) {
+  FarmerFromServerModel? farmer;
+
+  Future<void> initFarmData(Farm farm) async {
     try {
+      await setSelectedFarmer(farmer);
+      // Load farmers first
+      await getFarmerById();
+
       _farmId = farm.id;
       // Set the project ID and update the selected project
       projectIdController.text = farm.projectId;
@@ -210,6 +267,21 @@ class EditFarmProvider with ChangeNotifier {
 
       // Set farm boundary polygon status
       _hasFarmBoundaryPolygon = farm.hasBoundaryPolygon;
+
+
+      
+      // Set the selected farmer based on farmerId
+      if (farm.farmerId != null && farm.farmerId != 0) {
+        try {
+          _selectedFarmer = _farmersFromServer.firstWhere(
+            (farmer) => farmer.id == farm.farmerId,
+          );
+          debugPrint('Selected farmer: ${_selectedFarmer?.firstName} ${_selectedFarmer?.lastName}');
+        } catch (e) {
+          debugPrint('Farmer with ID ${farm.farmerId} not found in local database');
+          _selectedFarmer = null;
+        }
+      }
 
       // Notify listeners to update the UI with the new data
       notifyListeners();
@@ -384,6 +456,7 @@ class EditFarmProvider with ChangeNotifier {
 
       final farm = Farm(
         id: _farmId,
+        farmerId: selectedFarmer?.id,
         projectId: projectIdController.text.trim(),
         visitId: visitIdController.text.trim(),
         dateOfVisit: _dateOfVisit?.toIso8601String() ?? '',

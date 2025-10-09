@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui';
+import 'package:exim_project_monitor/core/models/server_models/farmers_model/farmers_from_server.dart';
 import 'package:exim_project_monitor/features/farm_management/polygon_drawing_tool/polygon_drawing_tool.dart';
 import 'package:exim_project_monitor/features/farm_management/polygon_drawing_tool/utils/double_value_trimmer.dart';
 import 'package:exim_project_monitor/widgets/custom_snackbar.dart';
@@ -13,7 +14,9 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:location/location.dart';
 import '../../core/models/farm_model.dart';
+import '../../core/models/farmer_model.dart';
 import '../../core/services/database/database_helper.dart';
+import '../../core/services/api/api.dart';
 import '../../widgets/globals/globals.dart';
 import 'package:geolocator/geolocator.dart' as gl;
 
@@ -30,6 +33,7 @@ class AddFarmProvider with ChangeNotifier {
 
 
   final _databaseHelper = DatabaseHelper();
+  final _apiService = APIService();
 
   // Date properties
   DateTime? _harvestDate;
@@ -37,11 +41,23 @@ class AddFarmProvider with ChangeNotifier {
   DateTime? _visitDate;
   bool _hasFarmBoundaryPolygon = false;
 
+  // Farmer selection properties
+  List<Farmer> _farmers = [];
+  List<FarmerFromServerModel> _farmersFromServer = [];
+  FarmerFromServerModel? _selectedFarmer;
+  bool _loadingFarmers = false;
+  String? _farmerLoadError;
+
   // Getters
   DateTime? get harvestDate => _harvestDate;
   DateTime? get plantingDate => _plantingDate;
   DateTime? get visitDate => _visitDate;
   bool get hasFarmBoundaryPolygon => _hasFarmBoundaryPolygon;
+  List<Farmer> get farmers => _farmers;
+  List<FarmerFromServerModel> get farmersFromServer => _farmersFromServer;
+  FarmerFromServerModel? get selectedFarmer => _selectedFarmer;
+  bool get loadingFarmers => _loadingFarmers;
+  String? get farmerLoadError => _farmerLoadError;
 
   // Setters
   void setHarvestDate(DateTime? date) {
@@ -62,6 +78,49 @@ class AddFarmProvider with ChangeNotifier {
   void setFarmBoundaryPolygon(bool value) {
     _hasFarmBoundaryPolygon = value;
     farmBoundaryPolygonController.text = value ? 'Yes' : 'No';
+    notifyListeners();
+  }
+
+  // load farmer from server from local db
+  // loadFarmFromServer() async {
+  //
+  //   final farmers = await _databaseHelper.getAllFarmersFromServer();
+  //   _farmersFromServer = farmers;
+  //   notifyListeners();
+  // }
+
+  /// Load farmers from local database (farmers from server model)
+  Future<void> loadFarmers() async {
+    _loadingFarmers = true;
+    _farmerLoadError = null;
+    notifyListeners();
+
+    try {
+      // Load farmers from server model stored in local database
+      _farmersFromServer = await _databaseHelper.getAllFarmersFromServerWithRelations();
+
+      debugPrint('Loaded ${_farmersFromServer.length} farmers from local database');
+
+      _loadingFarmers = false;
+      notifyListeners();
+    } catch (e, stackTrace) {
+      debugPrint('Error loading farmers from server: $e');
+      debugPrint('Stack trace: $stackTrace');
+      _loadingFarmers = false;
+      _farmerLoadError = 'Failed to load farmers';
+      notifyListeners();
+    }
+  }
+
+  /// Set the selected farmer
+  void setSelectedFarmer(FarmerFromServerModel? farmer) {
+    _selectedFarmer = farmer;
+    notifyListeners();
+  }
+
+  /// Clear selected farmer
+  void clearSelectedFarmer() {
+    _selectedFarmer = null;
     notifyListeners();
   }
 
@@ -389,6 +448,9 @@ class AddFarmProvider with ChangeNotifier {
     // Show loading indicator while fetching farm data
     Globals().startWait(addFarmScreenContext);
 
+    // Load farmers
+    await loadFarmers();
+
     // Hide loading indicator
     Globals().endWait(addFarmScreenContext);
   }
@@ -417,6 +479,7 @@ class AddFarmProvider with ChangeNotifier {
           .toList();
 
       final farm = Farm(
+        farmerId: selectedFarmer?.id,
         projectId: projectIdController.text.trim(),
         visitId: visitIdController.text.trim(),
         dateOfVisit: _visitDate?.toString() ?? '',
@@ -509,7 +572,7 @@ class AddFarmProvider with ChangeNotifier {
   }
 
   /// Saves the farm data to the local database and syncs with the server if online
-  Future<bool> saveFarmToDatabase() async {
+  Future<bool> submitFarm() async {
     debugPrint('Saving farm to database...');
     if (!_validateForm()) {
       debugPrint('Form validation failed');
@@ -536,6 +599,7 @@ class AddFarmProvider with ChangeNotifier {
 
       debugPrint('Creating farm object with polygon data...');
       final farm = Farm(
+        farmerId: selectedFarmer?.id,
         projectId: projectIdController.text.trim(),
         visitId: visitIdController.text.trim(),
         dateOfVisit: _visitDate?.toString() ?? '',
@@ -616,35 +680,6 @@ class AddFarmProvider with ChangeNotifier {
         );
       }
 
-      return false;
-    }
-  }
-
-  /// Submits the farm data to the server
-  Future<bool> submitFarm() async {
-    // First save locally
-    final saved = await saveFarm();
-    if (!saved) return false;
-
-    try {
-      // TODO: Implement actual server submission logic here
-      // For now, we'll just simulate a successful submission
-      await Future.delayed(const Duration(seconds: 1));
-
-      if (addFarmScreenContext.mounted) {
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          const SnackBar(content: Text('Farm submitted successfully')),
-        );
-      }
-
-      return true;
-    } catch (e) {
-      debugPrint('Error submitting farm: $e');
-      if (addFarmScreenContext.mounted) {
-        ScaffoldMessenger.of(
-          addFarmScreenContext,
-        ).showSnackBar(SnackBar(content: Text('Error submitting farm: $e')));
-      }
       return false;
     }
   }

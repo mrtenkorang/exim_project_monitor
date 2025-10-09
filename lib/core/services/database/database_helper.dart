@@ -68,6 +68,7 @@ class DatabaseHelper {
 
   // Farms table columns
   static const String columnProjectId = 'projectId';
+  static const String columnFarmerId = 'farmer_id';
   static const String columnVisitId = 'visitId';
   static const String columnDateOfVisit = 'dateOfVisit';
   static const String columnMainBuyers = 'mainBuyers';
@@ -186,6 +187,7 @@ class DatabaseHelper {
   CREATE TABLE $tableFarms (
     $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
     $columnProjectId TEXT NOT NULL,
+    $columnFarmerId INTEGER NOT NULL,
     $columnVisitId TEXT NOT NULL UNIQUE,
     $columnDateOfVisit TEXT NOT NULL,
     $columnMainBuyers TEXT NOT NULL,
