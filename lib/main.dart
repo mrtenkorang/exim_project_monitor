@@ -1,5 +1,7 @@
 import 'package:exim_project_monitor/features/auth/screens/auth/login_provider.dart';
 import 'package:exim_project_monitor/features/home/home_provider.dart';
+import 'package:exim_project_monitor/features/sync/background_sync/background_sync.dart';
+import 'package:exim_project_monitor/features/sync/background_sync/sync_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -26,16 +28,17 @@ import 'package:get/get.dart';
 void main() async {
   // Ensure Flutter binding is initialized
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize shared preferences
   final prefs = await SharedPreferences.getInstance();
-  
+
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
 
+  // Initialize providers
   final themeProvider = ThemeProvider(prefs);
   final addFarmProvider = AddFarmProvider();
   final farmListProvider = FarmListProvider();
@@ -48,6 +51,14 @@ void main() async {
   final loginProvider = LoginProvider();
   final addFarmerProvider = AddFarmerProvider();
 
+  // Initialize sync services
+  final backgroundSyncService = BackgroundSyncService(() {
+    // This callback will be set properly after SyncManager is created
+    debugPrint('Background sync triggered - callback not set yet');
+    return Future<void>.value();
+  });
+
+  final syncManager = SyncManager(backgroundSyncService);
 
   runApp(
     MultiProvider(
@@ -63,6 +74,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => editFarmProvider),
         ChangeNotifierProvider(create: (_) => loginProvider),
         ChangeNotifierProvider(create: (_) => addFarmerProvider),
+        ChangeNotifierProvider(create: (_) => syncManager), // Add SyncManager
       ],
       child: const EximProjectMonitorApp(),
     ),
@@ -75,15 +87,14 @@ class EximProjectMonitorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    
+
     return GetMaterialApp(
       title: 'Exim Project Monitor',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,
-      home: const SplashScreen(),
-      // Add named routes for navigation
+      home: const AppStartupWrapper(),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const ScreenWrapper(),
@@ -94,3 +105,66 @@ class EximProjectMonitorApp extends StatelessWidget {
   }
 }
 
+// Wrapper widget to handle app initialization
+class AppStartupWrapper extends StatefulWidget {
+  const AppStartupWrapper({super.key});
+
+  @override
+  State<AppStartupWrapper> createState() => _AppStartupWrapperState();
+}
+
+class _AppStartupWrapperState extends State<AppStartupWrapper> {
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    try {
+      final syncManager = Provider.of<SyncManager>(context, listen: false);
+
+      // Initialize sync manager (this sets up background services)
+      await syncManager.initialize();
+
+      // Check for pending sync on app startup
+      if (await syncManager.hasPendingSync()) {
+        // Trigger sync in background without blocking UI
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          syncManager.syncAllData();
+        });
+      }
+
+      setState(() {
+        _isInitialized = true;
+      });
+    } catch (e) {
+      debugPrint('App initialization error: $e');
+      setState(() {
+        _isInitialized = true; // Continue anyway
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Initializing app...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return const SplashScreen();
+  }
+}

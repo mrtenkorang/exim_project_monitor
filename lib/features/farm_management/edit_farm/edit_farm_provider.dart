@@ -5,8 +5,11 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui';
+import 'package:exim_project_monitor/core/cache_service/cache_service.dart';
+import 'package:exim_project_monitor/core/models/user_model.dart';
 import 'package:exim_project_monitor/features/farm_management/polygon_drawing_tool/polygon_drawing_tool.dart';
 import 'package:exim_project_monitor/features/farm_management/polygon_drawing_tool/utils/double_value_trimmer.dart';
+import 'package:exim_project_monitor/widgets/custom_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +18,7 @@ import 'package:geolocator/geolocator.dart' as gl;
 
 import '../../../core/models/farm_model.dart';
 import '../../../core/models/server_models/farmers_model/farmers_from_server.dart';
+import '../../../core/services/api/api.dart';
 import '../../../core/services/database/database_helper.dart';
 import '../../../widgets/globals/globals.dart';
 
@@ -97,9 +101,12 @@ class EditFarmProvider with ChangeNotifier {
   // }
 
   Future<void> getFarmerById() async {
-    farmer = await DatabaseHelper().getFarmerFromServerById(_selectedFarmer!.id);
-
-    notifyListeners();
+    if (_selectedFarmer != null) {
+      farmer = await DatabaseHelper().getFarmerFromServerById(_selectedFarmer!.id);
+      notifyListeners();
+    } else {
+      debugPrint("No farmer selected");
+    }
   }
   /// Set the selected farmer
   setSelectedFarmer(FarmerFromServerModel? farmer) {
@@ -119,7 +126,7 @@ class EditFarmProvider with ChangeNotifier {
 
   // Basic Information
   final TextEditingController farmLocationController = TextEditingController();
-  final TextEditingController projectIdController = TextEditingController();
+  // final TextEditingController projectIdController = TextEditingController();
   final TextEditingController farmSizeController = TextEditingController();
   final TextEditingController visitIdController = TextEditingController();
   final TextEditingController dateOfVisitController = TextEditingController();
@@ -154,7 +161,7 @@ class EditFarmProvider with ChangeNotifier {
 
   // Officer Information
   final TextEditingController officerNameController = TextEditingController();
-  final TextEditingController officerIdController = TextEditingController();
+  // final TextEditingController officerIdController = TextEditingController();
 
   // Assessment
   final TextEditingController observationsController = TextEditingController();
@@ -163,16 +170,6 @@ class EditFarmProvider with ChangeNotifier {
   final TextEditingController recommendedActionsController = TextEditingController();
   final TextEditingController followUpStatusController = TextEditingController();
 
-  String? _selectedProjectID;
-  String? get selectedProjectID => _selectedProjectID;
-
-  final List<String> projectIDs = ["Project 1", "Project 2", "Project 3"];
-
-  void setSelectedProject(String? val) {
-    _selectedProjectID = val;
-    projectIdController.text = val ?? '';
-    notifyListeners();
-  }
 
   int? _farmId;
   int? get farmId => _farmId;
@@ -181,14 +178,51 @@ class EditFarmProvider with ChangeNotifier {
 
   Future<void> initFarmData(Farm farm) async {
     try {
-      await setSelectedFarmer(farmer);
-      // Load farmers first
-      await getFarmerById();
+      debugPrint("Initializing farm data: ${farm.toJson()}");
+      
+      // First, get the farmer from the database using farm.farmerId
+      _farmersFromServer = await DatabaseHelper().getAllFarmersFromServerWithRelations();
+      
+      // Parse and set the farm boundary polygon if it exists
+      if (farm.farmBoundaryPolygon != null) {
+        try {
+          final polygonString = String.fromCharCodes(farm.farmBoundaryPolygon!);
+          final List<dynamic> points = jsonDecode(polygonString);
+          final polygonPoints = points.map<LatLng>((point) {
+            return LatLng(
+              double.parse(point['latitude'].toString()),
+              double.parse(point['longitude'].toString()),
+            );
+          }).toList();
+          
+          if (polygonPoints.isNotEmpty) {
+            polygon = Polygon(
+              polygonId: const PolygonId('farm_boundary'),
+              points: polygonPoints,
+              strokeWidth: 2,
+              strokeColor: Colors.blue,
+              fillColor: Colors.blue.withOpacity(0.2),
+            );
+            // Calculate and set the farm size
+            final area = calculatePolygonArea(polygonPoints);
+            farmSizeController.text = area.toStringAsFixed(2);
+
+            markers = polygonPoints.map<Marker>((point) {
+              return Marker(
+                markerId: MarkerId(point.toString()),
+                position: point,
+
+              );
+            }).toSet();
+          }
+        } catch (e) {
+          debugPrint('Error parsing farm boundary polygon: $e');
+        }
+      }
 
       _farmId = farm.id;
       // Set the project ID and update the selected project
-      projectIdController.text = farm.projectId;
-      _selectedProjectID = farm.projectId;
+
 
       // Parse dates from the farm object
       if (farm.dateOfVisit.isNotEmpty) {
@@ -258,7 +292,7 @@ class EditFarmProvider with ChangeNotifier {
       cooperativesOrFarmerGroupsController.text = farm.cooperativesOrFarmerGroups;
       valueChainLinkagesController.text = farm.valueChainLinkages;
       officerNameController.text = farm.officerName;
-      officerIdController.text = farm.officerId;
+      // officerIdController.text = farm.officerId;
       observationsController.text = farm.observations;
       issuesIdentifiedController.text = farm.issuesIdentified;
       infrastructureIdentifiedController.text = farm.infrastructureIdentified;
@@ -295,7 +329,7 @@ class EditFarmProvider with ChangeNotifier {
   void dispose() {
     // Dispose all controllers
     farmLocationController.dispose();
-    projectIdController.dispose();
+    // projectIdController.dispose();
     farmSizeController.dispose();
     visitIdController.dispose();
     dateOfVisitController.dispose();
@@ -318,7 +352,7 @@ class EditFarmProvider with ChangeNotifier {
     cooperativesOrFarmerGroupsController.dispose();
     valueChainLinkagesController.dispose();
     officerNameController.dispose();
-    officerIdController.dispose();
+    // officerIdController.dispose();
     observationsController.dispose();
     issuesIdentifiedController.dispose();
     infrastructureIdentifiedController.dispose();
@@ -348,6 +382,7 @@ class EditFarmProvider with ChangeNotifier {
   /// Observable flag to track initial loading state
   bool _isInitialLoad = false;
   bool get isInitialLoad => _isInitialLoad;
+
   set isInitialLoad(bool value) {
     _isInitialLoad = value;
     notifyListeners();
@@ -381,6 +416,9 @@ class EditFarmProvider with ChangeNotifier {
   /// Currently active polygon for editing operations
   Polygon? activePolygon;
 
+  /// API service instance
+  final _apiService = APIService();
+
   // Flags for polygon navigation state
   bool _isLastPolygon = false;
   bool _isFirstPolygon = false;
@@ -412,6 +450,16 @@ class EditFarmProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  User? userInfo;
+
+  Future<void> loadUserInfo() async {
+    final cacheService = await CacheService.getInstance();
+    userInfo = await cacheService.getUserInfo();
+
+    debugPrint("USER INFO: ${userInfo?.toJson()}");
+    notifyListeners();
+  }
+
   // ==================================================================================
   // INITIALIZATION & LIFECYCLE
   // ==================================================================================
@@ -435,98 +483,217 @@ class EditFarmProvider with ChangeNotifier {
 
   /// Saves the farm data to the local database
   Future<bool> saveFarm() async {
-    debugPrint('Saving farm...');
-    if (!_validateForm()) return false;
-
     debugPrint('Form is valid. Saving farm...');
     try {
-      // If polygon exists, close it by adding the first point
-      if (polygon != null) {
-        polygon!.points.add(polygon!.points.first);
+      // Show loading indicator
+      if (addFarmScreenContext.mounted) {
+        Globals().startWait(addFarmScreenContext);
       }
 
-      // Convert polygon to coordinate format if exists
-      Uint8List? boundaryPolygon;
-      if (polygon != null && polygon!.points.isNotEmpty) {
-        var boundaryCoordinates = polygon!.points
-            .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
-            .toList();
-        boundaryPolygon = Uint8List.fromList(utf8.encode(jsonEncode(boundaryCoordinates)));
-      }
+      polygon!.points.add(polygon!.points.first);
+
+      // Convert polygon to coordinate format
+      var boundaryCoordinates = polygon!.points
+          .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
+          .toList();
 
       final farm = Farm(
-        id: _farmId,
+        id: farmId,
         farmerId: selectedFarmer?.id,
-        projectId: projectIdController.text.trim(),
         visitId: visitIdController.text.trim(),
-        dateOfVisit: _dateOfVisit?.toIso8601String() ?? '',
+        dateOfVisit: dateOfVisit?.toString() ?? '',
         mainBuyers: mainBuyersController.text.trim(),
-        farmBoundaryPolygon: boundaryPolygon,
+        farmBoundaryPolygon: Uint8List.fromList(
+          utf8.encode(jsonEncode(boundaryCoordinates)),
+        ),
         landUseClassification: landUseClassificationController.text.trim(),
         accessibility: accessibilityController.text.trim(),
-        proximityToProcessingFacility: proximityToProcessingFacilityController.text.trim(),
+        proximityToProcessingFacility: proximityToProcessingFacilityController
+            .text
+            .trim(),
         serviceProvider: serviceProviderController.text.trim(),
-        cooperativesOrFarmerGroups: cooperativesOrFarmerGroupsController.text.trim(),
+        cooperativesOrFarmerGroups: cooperativesOrFarmerGroupsController.text
+            .trim(),
         valueChainLinkages: valueChainLinkagesController.text.trim(),
         officerName: officerNameController.text.trim(),
-        officerId: officerIdController.text.trim(),
+        officerId: userInfo?.userID.toString() ?? "",
         observations: observationsController.text.trim(),
         issuesIdentified: issuesIdentifiedController.text.trim(),
-        infrastructureIdentified: infrastructureIdentifiedController.text.trim(),
+        infrastructureIdentified: infrastructureIdentifiedController.text
+            .trim(),
         recommendedActions: recommendedActionsController.text.trim(),
         followUpStatus: followUpStatusController.text.trim(),
         farmSize: farmSizeController.text.trim(),
         location: farmLocationController.text.trim(),
-        isSynced: false, // Mark as not synced since it's updated
-        updatedAt: DateTime.now(),
-
-        // New fields
+        isSynced: false,
         latitude: double.tryParse(latitudeController.text) ?? 0.0,
         longitude: double.tryParse(longitudeController.text) ?? 0.0,
         cropType: cropTypeController.text.trim(),
         varietyBreed: varietyBreedController.text.trim(),
-        plantingDate: _plantingDate?.toIso8601String() ?? '',
+        plantingDate: _plantingDate?.toString() ?? '',
         plantingDensity: plantingDensityController.text.trim(),
         labourHired: int.tryParse(labourHiredController.text) ?? 0,
         maleWorkers: int.tryParse(maleWorkersController.text) ?? 0,
         femaleWorkers: int.tryParse(femaleWorkersController.text) ?? 0,
         estimatedYield: estimatedYieldController.text.trim(),
         previousYield: previousYieldController.text.trim(),
-        harvestDate: _harvestDate?.toIso8601String() ?? '',
+        harvestDate: _harvestDate?.toString() ?? '',
       );
 
-      debugPrint('Updating farm with ID: ${farm.id}');
+      debugPrint('Saving farm with polygon data: ${farm.farmBoundaryPolygon}');
 
-      // Update the farm in the database
+      // Insert the farm into the database
       final id = await _databaseHelper.updateFarm(farm);
+      debugPrint('Farm saved with ID: $id');
 
-      if (id>=0) {
-        debugPrint('Farm updated successfully');
-
-        // Show success message
-        if (addFarmScreenContext.mounted) {
-          ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-            const SnackBar(content: Text('Farm updated successfully')),
-          );
-
-          // Navigate back after a short delay
-          Future.delayed(const Duration(seconds: 1), () {
-            if (addFarmScreenContext.mounted) {
-              Navigator.of(addFarmScreenContext).pop(true); // Return success
-            }
-          });
-        }
-        return true;
-      } else {
-        throw Exception('Failed to update farm in database');
+      // Hide loading indicator
+      if (addFarmScreenContext.mounted) {
+        Globals().endWait(addFarmScreenContext);
       }
+
+      // Show success message
+      if (addFarmScreenContext.mounted) {
+        CustomSnackbar.show(
+          addFarmScreenContext,
+          message: "Farm updated successfully",
+          type: SnackbarType.success,
+        );
+
+        // Navigate back after a short delay
+        Future.delayed(const Duration(seconds: 1), () {
+          if (addFarmScreenContext.mounted) {
+            Navigator.of(addFarmScreenContext).pop(true); // Return success
+          }
+        });
+      }
+
+      return true;
     } catch (e, stackTrace) {
-      debugPrint('Error updating farm: $e');
+      debugPrint('Error saving farm: $e');
       debugPrint('Stack trace: $stackTrace');
 
+      // Hide loading indicator
       if (addFarmScreenContext.mounted) {
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          SnackBar(content: Text('Error updating farm: ${e.toString()}')),
+        Globals().endWait(addFarmScreenContext);
+      }
+
+      if (addFarmScreenContext.mounted) {
+        CustomSnackbar.show(
+          addFarmScreenContext,
+          message: "An unknown error occurred",
+          type: SnackbarType.error,
+        );
+      }
+
+      return false;
+    }
+  }
+
+  /// Saves the farm data to the local database and syncs with the server if online
+  /// Saves the farm data to the local database and syncs with the server if online
+  Future<bool> submitFarm() async {
+
+    debugPrint('Form is valid. Saving farm...');
+    try {
+      // Show loading indicator
+      if (addFarmScreenContext.mounted) {
+        Globals().startWait(addFarmScreenContext);
+      }
+
+      polygon!.points.add(polygon!.points.first);
+
+      // Convert polygon to coordinate format
+      var boundaryCoordinates = polygon!.points
+          .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
+          .toList();
+
+      final farm = Farm(
+        id: _farmId,
+        farmerId: selectedFarmer?.id,
+        visitId: visitIdController.text.trim(),
+        dateOfVisit: dateOfVisit?.toString() ?? '',
+        mainBuyers: mainBuyersController.text.trim(),
+        farmBoundaryPolygon: Uint8List.fromList(
+          utf8.encode(jsonEncode(boundaryCoordinates)),
+        ),
+        landUseClassification: landUseClassificationController.text.trim(),
+        accessibility: accessibilityController.text.trim(),
+        proximityToProcessingFacility: proximityToProcessingFacilityController
+            .text
+            .trim(),
+        serviceProvider: serviceProviderController.text.trim(),
+        cooperativesOrFarmerGroups: cooperativesOrFarmerGroupsController.text
+            .trim(),
+        valueChainLinkages: valueChainLinkagesController.text.trim(),
+        officerName: officerNameController.text.trim(),
+        officerId: userInfo?.userID.toString() ?? "",
+        observations: observationsController.text.trim(),
+        issuesIdentified: issuesIdentifiedController.text.trim(),
+        infrastructureIdentified: infrastructureIdentifiedController.text
+            .trim(),
+        recommendedActions: recommendedActionsController.text.trim(),
+        followUpStatus: followUpStatusController.text.trim(),
+        farmSize: farmSizeController.text.trim(),
+        location: farmLocationController.text.trim(),
+        isSynced: true, // Set to false by default for new farms
+        // NEW FIELDS - You'll need to update your Farm model to include these
+        latitude: double.tryParse(latitudeController.text) ?? 0.0,
+        longitude: double.tryParse(longitudeController.text) ?? 0.0,
+        cropType: cropTypeController.text.trim(),
+        varietyBreed: varietyBreedController.text.trim(),
+        plantingDate: _plantingDate?.toString() ?? '',
+        plantingDensity: plantingDensityController.text.trim(),
+        labourHired: int.tryParse(labourHiredController.text) ?? 0,
+        maleWorkers: int.tryParse(maleWorkersController.text) ?? 0,
+        femaleWorkers: int.tryParse(femaleWorkersController.text) ?? 0,
+        estimatedYield: estimatedYieldController.text.trim(),
+        previousYield: previousYieldController.text.trim(),
+        harvestDate: _harvestDate?.toString() ?? '',
+      );
+
+      debugPrint('Submitting farm with polygon data: ${farm.toJsonOnline()}');
+
+      // Insert the farm into the database
+      dynamic farmResponse = await _apiService.submitFarm(farm);
+
+      // Hide loading indicator
+      if (addFarmScreenContext.mounted) {
+        Globals().endWait(addFarmScreenContext);
+      }
+
+      // Show success message
+      if (addFarmScreenContext.mounted && farmResponse != null && farmResponse == 1) {
+        final id = await _databaseHelper.updateFarm(farm);
+        debugPrint('Farm submitted with ID: $id');
+        CustomSnackbar.show(
+          addFarmScreenContext,
+          message: "Farm submitted successfully",
+          type: SnackbarType.success,
+        );
+
+        // Navigate back after a short delay
+        Future.delayed(const Duration(seconds: 1), () {
+          if (addFarmScreenContext.mounted) {
+            Navigator.of(addFarmScreenContext).pop(true);
+          }
+        });
+      }
+
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint('Error submitting farm: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      // Hide loading indicator
+      if (addFarmScreenContext.mounted) {
+        Globals().endWait(addFarmScreenContext);
+      }
+
+      if (addFarmScreenContext.mounted) {
+        CustomSnackbar.show(
+          addFarmScreenContext,
+          message: "An unknown error occurred",
+          type: SnackbarType.error,
         );
       }
 
@@ -564,60 +731,6 @@ class EditFarmProvider with ChangeNotifier {
       debugPrint('Error deleting farm: $e');
       return false;
     }
-  }
-
-  /// Submits the farm data to the server
-  Future<bool> submitFarm() async {
-    // First save locally
-    final saved = await saveFarm();
-    if (!saved) return false;
-
-    try {
-      // TODO: Implement actual server submission logic here
-      // For now, we'll just simulate a successful submission
-      await Future.delayed(const Duration(seconds: 1));
-
-      if (addFarmScreenContext.mounted) {
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          const SnackBar(content: Text('Farm submitted successfully')),
-        );
-      }
-
-      return true;
-    } catch (e) {
-      debugPrint('Error submitting farm: $e');
-      if (addFarmScreenContext.mounted) {
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-            SnackBar(content: Text('Error submitting farm: $e')));
-      }
-      return false;
-    }
-  }
-
-  bool _validateForm() {
-    // Basic validation - you can add more specific validation as needed
-    if (projectIdController.text.isEmpty) {
-      ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-        const SnackBar(content: Text('Project ID is required')),
-      );
-      return false;
-    }
-
-    if (visitIdController.text.isEmpty) {
-      ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-        const SnackBar(content: Text('Visit ID is required')),
-      );
-      return false;
-    }
-
-    if (farmSizeController.text.isEmpty) {
-      ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-        const SnackBar(content: Text('Farm size is required')),
-      );
-      return false;
-    }
-
-    return true;
   }
 
   // ==================================================================================
@@ -661,6 +774,52 @@ class EditFarmProvider with ChangeNotifier {
   // ==================================================================================
   // GEOMETRIC CALCULATIONS
   // ==================================================================================
+
+  /// Calculates the area of a polygon in square meters using the shoelace formula
+  /// [points] List of LatLng points that form the polygon
+  /// Returns the area in square meters
+  double calculatePolygonArea(List<LatLng> points) {
+    if (points.length < 3) return 0.0;
+
+    double area = 0.0;
+    final p1 = points[0];
+    LatLng p2;
+    LatLng p3;
+    int count = points.length;
+    
+    // Calculate the area using the shoelace formula
+    for (int i = 1; i < count - 1; i++) {
+      p2 = points[i];
+      p3 = points[i + 1];
+      
+      // Using the spherical excess formula for more accurate results on Earth's surface
+      final lat1 = p1.latitude * (pi / 180);
+      final lon1 = p1.longitude * (pi / 180);
+      final lat2 = p2.latitude * (pi / 180);
+      final lon2 = p2.longitude * (pi / 180);
+      final lat3 = p3.latitude * (pi / 180);
+      final lon3 = p3.longitude * (pi / 180);
+      
+      // Using the spherical excess formula (l'Huilier's theorem)
+      final a = 2 * asin(sqrt(pow(sin((lat1 - lat2) / 2), 2) + 
+          cos(lat1) * cos(lat2) * pow(sin((lon1 - lon2) / 2), 2)));
+      final b = 2 * asin(sqrt(pow(sin((lat2 - lat3) / 2), 2) + 
+          cos(lat2) * cos(lat3) * pow(sin((lon2 - lon3) / 2), 2)));
+      final c = 2 * asin(sqrt(pow(sin((lat3 - lat1) / 2), 2) + 
+          cos(lat3) * cos(lat1) * pow(sin((lon3 - lon1) / 2), 2)));
+      
+      final s = (a + b + c) / 2;
+      final excess = 4 * atan(sqrt(tan(s/2) * tan((s - a)/2) * 
+          tan((s - b)/2) * tan((s - c)/2)));
+      
+      // Earth's radius in meters (mean radius)
+      const double earthRadius = 6371000.0;
+      area += excess * earthRadius * earthRadius;
+    }
+    
+    // Return absolute value of the area
+    return area.abs();
+  }
 
   bool isPointInCircle(LatLng point, LatLng center, double radius) {
     double distance = gl.Geolocator.distanceBetween(

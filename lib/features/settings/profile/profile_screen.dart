@@ -17,6 +17,7 @@ class ProfileScreen extends StatelessWidget {
 
     // If user is null, create a default user
     user ??= User(
+      userID: 1,
       firstName: 'test',
       lastName: 'test',
       userName: 'test',

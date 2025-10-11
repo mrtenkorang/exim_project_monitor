@@ -27,6 +27,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
     provider.autoFillCoordinates();
     // Load farmers
     provider.loadFarmers();
+    provider.loadUserInfo();
   }
 
   @override
@@ -96,6 +97,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                     _buildTitleAndField(
                       "Planting Density / Spacing",
                       farmProvider.plantingDensityController,
+                      keyboardType: TextInputType.number
                     ),
 
                     // Labour Information Section
@@ -133,11 +135,12 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                     _buildTitleAndField(
                       "Estimated Yield",
                       farmProvider.estimatedYieldController,
+                      keyboardType: TextInputType.number,
                     ),
                     _buildTitleAndField(
                       "Yields in Previous Seasons",
                       farmProvider.previousYieldController,
-                      maxLines: 2,
+                      keyboardType: TextInputType.number,
                     ),
                     DateField(
                       label: 'Harvest Date',
@@ -160,10 +163,12 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                     _buildTitleAndField(
                       "Accessibility (distance to road/market)",
                       farmProvider.accessibilityController,
+                      keyboardType: TextInputType.number,
                     ),
                     _buildTitleAndField(
                       "Proximity to Processing Facility",
                       farmProvider.proximityToProcessingFacilityController,
+                      keyboardType: TextInputType.number,
                     ),
                     _buildTitleAndField(
                       "Service Provider",
@@ -190,14 +195,15 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                         farmProvider.setVisitDate(date);
                       },
                     ),
-                    _buildTitleAndField(
-                      "Officer Name",
-                      farmProvider.officerNameController,
-                    ),
-                    _buildTitleAndField(
-                      "Officer ID",
-                      farmProvider.officerIdController,
-                    ),
+
+                    // _buildTitleAndField(
+                    //   "Officer Name",
+                    //   farmProvider.officerNameController,
+                    // ),
+                    // _buildTitleAndField(
+                    //   "Officer ID",
+                    //   farmProvider.officerIdController,
+                    // ),
 
                     // Assessment Section
                     _buildSectionHeader("Assessment"),
@@ -259,11 +265,12 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           "Select Farmer",
           style: TextStyle(
             fontWeight: FontWeight.w500,
             fontSize: 16,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -284,18 +291,21 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
           },
           selectedItem: farmProvider.selectedFarmer,
           itemAsString: (FarmerFromServerModel farmer) =>
-              '${farmer.firstName} ${farmer.lastName} - ${farmer.phoneNumber}',
+          '${farmer.firstName} ${farmer.lastName} - ${farmer.phoneNumber}',
           decoratorProps: DropDownDecoratorProps(
             decoration: InputDecoration(
               hintText: "Search and select farmer",
+              hintStyle: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade400),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade400),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -305,15 +315,23 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                 ),
               ),
               suffixIcon: farmProvider.loadingFarmers
-                  ? const Padding(
-                padding: EdgeInsets.all(12.0),
+                  ? Padding(
+                padding: const EdgeInsets.all(12.0),
                 child: SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
               )
-                  : const Icon(Icons.arrow_drop_down),
+                  : Icon(
+                Icons.arrow_drop_down,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              filled: true,
+              fillColor: Theme.of(context).colorScheme.surface,
             ),
           ),
           popupProps: PopupProps.menu(
@@ -322,11 +340,31 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
             searchFieldProps: TextFieldProps(
               decoration: InputDecoration(
                 hintText: "Search by name, phone, or location",
-                prefixIcon: const Icon(Icons.search),
+                hintStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surface,
+              ),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             itemBuilder: (context, farmer, isSelected, onTap) {
@@ -340,6 +378,8 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                 ),
                 child: ListTile(
                   selected: isSelected,
+                  selectedColor: Theme.of(context).colorScheme.primary,
+                  selectedTileColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   leading: CircleAvatar(
                     backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                     child: Text(
@@ -396,13 +436,13 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                     Icon(
                       Icons.person_search,
                       size: 64,
-                      color: Colors.grey.shade400,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       farmProvider.farmerLoadError ?? 'No farmers found',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -411,36 +451,31 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                       Text(
                         'Try adjusting your search terms',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade500,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                         ),
                         textAlign: TextAlign.center,
                       ),
                     ],
-                    // if (farmProvider.farmerLoadError != null) ...[
-                    //   // const SizedBox(height: 16),
-                    //   // ElevatedButton.icon(
-                    //   //   onPressed: () => farmProvider.loadFarmFromServer(),
-                    //   //   icon: const Icon(Icons.refresh, size: 18),
-                    //   //   label: const Text('Retry Loading'),
-                    //   //   style: ElevatedButton.styleFrom(
-                    //   //     backgroundColor: Theme.of(context).colorScheme.primary,
-                    //   //     foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    //   //   ),
-                    //   // ),
-                    // ],
                   ],
                 ),
               );
             },
             loadingBuilder: (context, searchEntry) {
-              return const Padding(
-                padding: EdgeInsets.all(24.0),
+              return Padding(
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Loading farmers...'),
+                    CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Loading farmers...',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -449,6 +484,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
               return Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
+                  color: Theme.of(context).colorScheme.surface,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
@@ -501,9 +537,10 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                     children: [
                       Text(
                         '${farmProvider.selectedFarmer!.firstName} ${farmProvider.selectedFarmer!.lastName}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -648,7 +685,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
               context,
             ).colorScheme.primary.withOpacity(0.3),
             onTap: () {
-              // farmProvider.submitFarm();
+              farmProvider.submitFarm();
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -684,7 +721,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
         Text(title),
         const SizedBox(height: 5),
         CustomTextField(
-          fillColor: enabled? null : Colors.grey.shade200,
+          fillColor: enabled? null : Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
           maxLines: maxLines,
           enabled: enabled,
           keyboardType: keyboardType,

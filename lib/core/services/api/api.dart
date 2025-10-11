@@ -190,30 +190,30 @@ class APIService {
 
   /// Submits a new farm to the server
   /// Returns the created farm data with server-generated ID
-  Future<Farm> submitFarm(Farm farm) async {
+  Future<dynamic> submitFarm(Farm farm) async {
     final responseData = await _makeRequest(
       'POST',
       Uri.parse(URL.farms),
-      body: farm.toJson(),
+      body: farm.toJsonOnline(),
     );
-    return Farm.fromMap(responseData['data']);
+    return responseData['status'];
   }
 
   /// Fetches a list of all farms from the server
   /// Optionally filter by projectId
-  Future<List<Farm>> getFarms({String? projectId}) async {
-    final queryParams = <String, dynamic>{};
-    if (projectId != null) {
-      queryParams['projectId'] = projectId;
-    }
-
-    final url = Uri.parse(URL.farms).replace(queryParameters: queryParams);
-
-    final responseData = await _makeRequest('GET', url);
-    return (responseData['data'] as List)
-        .map((farmJson) => Farm.fromMap(farmJson))
-        .toList();
-  }
+  // Future<List<Farm>> getFarms({String? projectId}) async {
+  //   final queryParams = <String, dynamic>{};
+  //   if (projectId != null) {
+  //     queryParams['projectId'] = projectId;
+  //   }
+  //
+  //   final url = Uri.parse(URL.farms).replace(queryParameters: queryParams);
+  //
+  //   final responseData = await _makeRequest('GET', url);
+  //   return (responseData['data'] as List)
+  //       .map((farmJson) => Farm.fromMap(farmJson))
+  //       .toList();
+  // }
 
   /// Fetches a single farm by ID
   Future<Farm> getFarmById(String id) async {
@@ -277,6 +277,7 @@ class APIService {
     final districtData = baseData["district_details"];
 
     final userr = User(
+      userID: responseData["data"]["id"],
       firstName: userData["first_name"],
       lastName: userData["last_name"],
       userName: userData["username"],
@@ -289,6 +290,7 @@ class APIService {
     );
 
     debugPrint("THE LOGIN DATA ::::::::::::::: ${userr.toJson()}");
+
     return User.fromJson(userr.toJson());
   }
 

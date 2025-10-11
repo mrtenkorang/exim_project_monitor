@@ -1,5 +1,6 @@
 class User {
 
+  int? userID;
   String? firstName;
   String? lastName;
   String? userName;
@@ -11,6 +12,7 @@ class User {
   String? regionCode;
 
   User({
+    required this.userID,
     required this.firstName,
     required this.lastName,
     required this.userName,
@@ -24,6 +26,7 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
+      userID: json['id'],
       firstName: json['first_name'],
       lastName: json['last_name'],
       userName: json['username'],
@@ -38,6 +41,7 @@ class User {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': userID,
       'first_name': firstName ?? "TEST",
       'last_name': lastName ?? "TEST",
       'username': userName ?? "TEST",

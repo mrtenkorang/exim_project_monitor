@@ -226,13 +226,12 @@ class _FarmList extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.edit, size: 20),
+              icon: Icon(isPending? Icons.edit:Icons.remove_red_eye, size: 20),
               onPressed: () {
-                // TODO: Implement edit functionality
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EditFarmScreen(farm: farm),
+                    builder: (context) => EditFarmScreen(farm: farm, isSynced: isPending),
                   ),
                 );
               },

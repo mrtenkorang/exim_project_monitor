@@ -248,12 +248,20 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
               // Farmers List
               Expanded(
                 child: ListView.builder(
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics()
+                  ),
                   itemCount: displayFarmers.length,
                   itemBuilder: (context, index) {
+                    double totalArea = 0;
+                    for (var farm in displayFarmers[index].farms) {
+                      totalArea += farm.areaHectares;
+                    }
                     final farmer = displayFarmers[index];
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: ListTile(
+                        tileColor: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.1),
                         contentPadding: const EdgeInsets.all(8),
                         leading: CircleAvatar(
                           backgroundColor: Theme.of(context).primaryColor,
@@ -284,6 +292,7 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
                             Row(
                               children: [
                                 Chip(
+                                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                                   side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                                   label: Text(
                                     '${farmer.farmsCount} Farms',
@@ -296,12 +305,13 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
                                 const SizedBox(width: 8),
                                 Chip(
                                   side: BorderSide(color: Theme.of(context).colorScheme.secondary, width: 1.5),
+                                  backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
                                   label: Text(
                                     farmer.farms.isNotEmpty
-                                        ? '${farmer.farms.first.areaHectares} ha'
+                                        ? '${totalArea.toStringAsFixed(2)} ha'
                                         : 'N/A',
                                     style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                      color: Theme.of(context).colorScheme.onSecondary,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -329,12 +339,6 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
             ],
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Implement add farmer
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }

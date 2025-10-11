@@ -179,18 +179,19 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Region',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: Theme.of(context).colorScheme.outline),
             borderRadius: BorderRadius.circular(8),
           ),
           child: DropdownButtonHideUnderline(
@@ -209,7 +210,8 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
                     children: [
                       Text(
                         region.region,
-                        style: const TextStyle(
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
@@ -218,7 +220,7 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
                         'Code: ${region.regCode}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
                     ],
@@ -227,8 +229,26 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
               }).toList(),
               isExpanded: true,
               hint: farmProvider.regions.isEmpty
-                  ? const Text('Loading regions...')
-                  : const Text('Select a region'),
+                  ? Text(
+                'Loading regions...',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              )
+                  : Text(
+                'Select a region',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+              dropdownColor: Theme.of(context).colorScheme.surface,
+              icon: Icon(
+                Icons.arrow_drop_down,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
         ),
@@ -251,11 +271,12 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'District',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -263,10 +284,10 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             border: Border.all(
-              color: isEnabled ? Colors.grey.shade300 : Colors.grey.shade200,
+              color: isEnabled ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.outline.withOpacity(0.3),
             ),
             borderRadius: BorderRadius.circular(8),
-            color: isEnabled ? null : Colors.grey.shade100,
+            color: isEnabled ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.surface.withOpacity(0.5),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -285,7 +306,8 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
                     children: [
                       Text(
                         district.district,
-                        style: const TextStyle(
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
@@ -296,7 +318,7 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
                             district.district,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -304,7 +326,7 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
                             district.districtCode,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
                         ],
@@ -315,9 +337,25 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
               }).toList(),
               isExpanded: true,
               hint: farmProvider.districts.isEmpty
-                  ? const Text('Loading districts...')
+                  ? Text(
+                'Loading districts...',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              )
                   : Text(
                 isEnabled ? 'Select a district' : 'Select a region first',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+              dropdownColor: Theme.of(context).colorScheme.surface,
+              icon: Icon(
+                Icons.arrow_drop_down,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),

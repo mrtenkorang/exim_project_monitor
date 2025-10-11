@@ -210,15 +210,19 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Region',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: Theme.of(context).colorScheme.outline),
             borderRadius: BorderRadius.circular(8),
           ),
           child: DropdownButtonHideUnderline(
@@ -229,8 +233,8 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
                 debugPrint("SELECTED REGION CODE: $newValue");
               },
               items: farmProvider.regions.map<DropdownMenuItem<String>>((
-                region,
-              ) {
+                  region,
+                  ) {
                 return DropdownMenuItem<String>(
                   value: region.regCode,
                   child: Column(
@@ -239,16 +243,17 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
                     children: [
                       Text(
                         region.region,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       Text(
                         'Code: ${region.regCode}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
                     ],
@@ -257,8 +262,26 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
               }).toList(),
               isExpanded: true,
               hint: farmProvider.regions.isEmpty
-                  ? const Text('Loading regions...')
-                  : const Text('Select a region'),
+                  ? Text(
+                'Loading regions...',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              )
+                  : Text(
+                'Select a region',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+              dropdownColor: Theme.of(context).colorScheme.surface,
+              icon: Icon(
+                Icons.arrow_drop_down,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
         ),
@@ -274,7 +297,7 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
 
     final isEnabled =
         farmProvider.selectedRegionId != null &&
-        farmProvider.districts.isNotEmpty;
+            farmProvider.districts.isNotEmpty;
 
     debugPrint("ALL DISTRICTS COUNT: ${farmProvider.districts.length}");
     debugPrint("FILTERED DISTRICTS COUNT: ${filteredDistricts.length}");
@@ -283,31 +306,35 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'District',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             border: Border.all(
-              color: isEnabled ? Colors.grey.shade300 : Colors.grey.shade200,
+              color: isEnabled ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.outline.withOpacity(0.3),
             ),
             borderRadius: BorderRadius.circular(8),
-            color: isEnabled ? null : Colors.grey.shade100,
+            color: isEnabled ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.surface.withOpacity(0.5),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: farmProvider.selectedDistrictId,
               onChanged: isEnabled
                   ? (String? newValue) {
-                      farmProvider.setSelectedDistrict(newValue);
-                    }
+                farmProvider.setSelectedDistrict(newValue);
+              }
                   : null,
               items: filteredDistricts.map<DropdownMenuItem<String>>((
-                district,
-              ) {
+                  district,
+                  ) {
                 return DropdownMenuItem<String>(
                   value: district.id.toString(),
                   child: Column(
@@ -316,9 +343,10 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
                     children: [
                       Text(
                         district.district,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 14,
                           fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       Row(
@@ -326,16 +354,16 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
                           Text(
                             district.district,
                             style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
+                              fontSize: 9,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
                           const SizedBox(width: 16),
                           Text(
                             district.districtCode,
                             style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
+                              fontSize: 8,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
                         ],
@@ -346,10 +374,26 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
               }).toList(),
               isExpanded: true,
               hint: farmProvider.districts.isEmpty
-                  ? const Text('Loading districts...')
+                  ? Text(
+                'Loading districts...',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              )
                   : Text(
-                      isEnabled ? 'Select a district' : 'Select a region first',
-                    ),
+                isEnabled ? 'Select a district' : 'Select a region first',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+              dropdownColor: Theme.of(context).colorScheme.surface,
+              icon: Icon(
+                Icons.arrow_drop_down,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
         ),
@@ -394,7 +438,7 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
               context,
             ).colorScheme.primary.withOpacity(0.3),
             onTap: () {
-              // farmProvider.submitFarm();
+              farmProvider.submitFarmer(context);
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,

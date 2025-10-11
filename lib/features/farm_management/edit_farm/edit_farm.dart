@@ -10,9 +10,10 @@ import '../../../widgets/date_field.dart';
 import 'edit_farm_provider.dart';
 
 class EditFarmScreen extends StatefulWidget {
-  const EditFarmScreen({super.key, required this.farm});
+  const EditFarmScreen({super.key, required this.farm, required this.isSynced});
 
   final Farm farm;
+  final bool isSynced;
 
   @override
   State<EditFarmScreen> createState() => _EditFarmScreenState();
@@ -26,6 +27,7 @@ class _EditFarmScreenState extends State<EditFarmScreen> {
     super.initState();
     _editFarmProvider = EditFarmProvider();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _editFarmProvider.loadUserInfo();
       _editFarmProvider.initFarmData(widget.farm);
       _editFarmProvider.addFarmScreenContext = context;
     });
@@ -209,14 +211,15 @@ class _EditFarmScreenState extends State<EditFarmScreen> {
                         farmProvider.setDateOfVisit(date);
                       },
                     ),
-                    _buildTitleAndField(
-                      "Officer Name",
-                      farmProvider.officerNameController,
-                    ),
-                    _buildTitleAndField(
-                      "Officer ID",
-                      farmProvider.officerIdController,
-                    ),
+
+                    // _buildTitleAndField(
+                    //   "Officer Name",
+                    //   farmProvider.officerNameController,
+                    // ),
+                    // _buildTitleAndField(
+                    //   "Officer ID",
+                    //   farmProvider.officerIdController,
+                    // ),
 
                     // Assessment Section
                     _buildSectionHeader("Assessment"),
@@ -247,7 +250,9 @@ class _EditFarmScreenState extends State<EditFarmScreen> {
 
                     const SizedBox(height: 20),
                     _buildMapFarmButton(farmProvider),
+                    if(widget.isSynced)
                     const SizedBox(height: 20),
+                    if(widget.isSynced)
                     _buildActionButtons(farmProvider),
                     const SizedBox(height: 20),
                   ],
@@ -667,7 +672,7 @@ class _EditFarmScreenState extends State<EditFarmScreen> {
               context,
             ).colorScheme.primary.withOpacity(0.3),
             onTap: () {
-              // farmProvider.submitFarm();
+              farmProvider.submitFarm();
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -703,7 +708,7 @@ class _EditFarmScreenState extends State<EditFarmScreen> {
         Text(title),
         const SizedBox(height: 5),
         CustomTextField(
-          fillColor: enabled ? null : Colors.grey.shade200,
+          fillColor: enabled ? null : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
           maxLines: maxLines,
           enabled: enabled,
           keyboardType: keyboardType,

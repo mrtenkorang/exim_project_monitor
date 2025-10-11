@@ -549,6 +549,7 @@ class DatabaseHelper {
     try {
       final db = await database;
       final map = farm.toMap();
+      map[columnProjectId] = "none";
       debugPrint(
         'Inserting farm with polygon data: ${farm.farmBoundaryPolygon}',
       );
@@ -623,6 +624,26 @@ class DatabaseHelper {
     }
   }
 
+  Future<List<Farmer>> getFarmerBySyncId(int syncId) async {
+    final db = await database;
+    final maps = await db.query(
+      tableFarmers,
+      where: '$columnIsSynced = ?',
+      whereArgs: [syncId],
+    );
+    return maps.map((map) => Farmer.fromMap(map)).toList();
+  }
+
+  Future<List<Farm>> getUnsyncedFarms() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      tableFarms,
+      where: '$columnIsSynced = ?',
+      whereArgs: [0],
+    );
+    return maps.map((map) => Farm.fromMap(map)).toList();
+  }
+
   /// Retrieves a farmer by ID
   Future<Farmer?> getFarmer(int id) async {
     final db = await database;
@@ -674,7 +695,7 @@ class DatabaseHelper {
     final db = await database;
     try {
       final map = farmer.toMap()
-        ..remove(columnId); // Remove ID to prevent update of primary key
+        ..remove(columnId);
       return await db.update(
         tableFarmers,
         map,

@@ -84,12 +84,17 @@ class FarmerFromServerModel {
       nationalId: json['national_id']?.toString() ?? "",
       yearsOfExperience: json['years_of_experience'] as int? ?? 0,
       primaryCrop: json['primary_crop']?.toString() ?? "",
-      secondaryCrops: (json['secondary_crops'] as List<dynamic>?)
-          ?.map((item) => item.toString())
-          .toList() ??
-          [],
+      secondaryCrops: json['secondary_crops'] is String 
+          ? json['secondary_crops'].toString().isNotEmpty 
+              ? [json['secondary_crops'].toString()] 
+              : []
+          : (json['secondary_crops'] as List<dynamic>?)
+              ?.map((item) => item.toString())
+              .toList() ?? [],
       cooperativeMembership: json['cooperative_membership']?.toString() ?? "",
-      extensionServices: json['extension_services'] as bool? ?? false,
+      extensionServices: json['extension_services'] is bool 
+          ? json['extension_services'] as bool
+          : (json['extension_services'] as int?) == 1,
       businessName: json['business_name']?.toString() ?? "",
       community: json['community']?.toString() ?? "",
       cropType: json['crop_type']?.toString() ?? "",

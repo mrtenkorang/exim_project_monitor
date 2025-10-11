@@ -1,10 +1,12 @@
 import 'package:exim_project_monitor/core/cache_service/cache_service.dart';
 import 'package:exim_project_monitor/core/models/user_model.dart';
 import 'package:exim_project_monitor/core/services/api/api.dart';
-import 'package:exim_project_monitor/core/services/cache_service.dart';
 import 'package:exim_project_monitor/features/farm_management/add_farm.dart';
 import 'package:exim_project_monitor/features/farmer_management/add_farmer.dart';
 import 'package:exim_project_monitor/features/farmer_management/history/farmer_history.dart';
+import 'package:exim_project_monitor/features/sync/sync_page.dart';
+import 'package:exim_project_monitor/widgets/custom_snackbar.dart';
+import 'package:exim_project_monitor/widgets/globals/globals.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -51,14 +53,14 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final homeProvider = Provider.of<HomeProvider>(context);
+    homeProvider.homeContext = context;
 
     // Show loading indicator while fetching user info
     if (_isLoading) {
       return Scaffold(
         body: Center(
-          child: CircularProgressIndicator(
-            color: theme.primaryColor,
-          ),
+          child: CircularProgressIndicator(color: theme.primaryColor),
         ),
       );
     }
@@ -72,9 +74,7 @@ class _HomeState extends State<Home> {
               expandedHeight: 120,
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
-                  decoration: BoxDecoration(
-                    color: theme.primaryColor,
-                  ),
+                  decoration: BoxDecoration(color: theme.primaryColor),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 20,
@@ -101,19 +101,30 @@ class _HomeState extends State<Home> {
                                     children: [
                                       Text(
                                         "${userInfo!.userName}",
-                                        style: theme.textTheme.titleLarge?.copyWith(
-                                          color: theme.colorScheme.surface,
-                                        ),
+                                        style: theme.textTheme.titleLarge
+                                            ?.copyWith(
+                                              color: theme.colorScheme.surface,
+                                            ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
-Spacer(),
+                                      const Spacer(),
                                       GestureDetector(
                                         onTap: () async {
-                                          final api = APIService();
-                                          await api.fetchFarmersFromServer();
+                                          // final api = APIService();
+                                          // await api.fetchFarmersFromServer();
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const SyncPage(),
+                                            ),
+                                          );
                                         },
-                                        child: Icon(Icons.sync, color: theme.secondaryHeaderColor),
-                                      )
+                                        child: Icon(
+                                          Icons.sync,
+                                          color: theme.secondaryHeaderColor,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 Text(
@@ -153,13 +164,13 @@ Spacer(),
                     color: theme.primaryColor,
                     onAdd: () async {
                       final result = await Get.to(
-                            () => const AddFarmerScreen(),
+                        () => const AddFarmerScreen(),
                       );
                       _handleResult(result);
                     },
                     onList: () async {
                       final result = await Get.to(
-                            () => const FarmerListScreen(),
+                        () => const FarmerListScreen(),
                       );
                       _handleResult(result);
                     },
@@ -168,8 +179,23 @@ Spacer(),
                       _handleResult(result);
                     },
                     onSync: () async {
-                      // var res = await homeController.submitAllPendingPrimaryEvacData();
-                      // if (res) setState(() {});
+                      final res = await homeProvider.syncPendingFarmers();
+                      debugPrint("Sync result: $res");
+                      if (res) {
+                        Globals().endWait(context);
+                        CustomSnackbar.show(
+                          context,
+                          message: "Synced successfully",
+                          type: SnackbarType.success,
+                        );
+                      } else {
+                        Globals().endWait(context);
+                        CustomSnackbar.show(
+                          context,
+                          message: "Sync failed",
+                          type: SnackbarType.error,
+                        );
+                      }
                     },
                   ),
                   const SizedBox(height: 16),
@@ -191,8 +217,23 @@ Spacer(),
                       _handleResult(result);
                     },
                     onSync: () async {
-                      // var res = await homeController.submitAllPendingSecondaryEvacData();
-                      // if (res) setState(() {});
+                      final res = await homeProvider.syncPendingFarms();
+                      debugPrint("Sync result: $res");
+                      if (res) {
+                        Globals().endWait(context);
+                        CustomSnackbar.show(
+                          context,
+                          message: "Synced successfully",
+                          type: SnackbarType.success,
+                        );
+                      } else {
+                        Globals().endWait(context);
+                        CustomSnackbar.show(
+                          context,
+                          message: "Sync failed",
+                          type: SnackbarType.error,
+                        );
+                      }
                     },
                   ),
                   const SizedBox(height: 16),
@@ -236,12 +277,12 @@ Spacer(),
   }
 
   Widget _buildOptionContainer(
-      BuildContext context,
-      String title,
-      IconData icon,
-      bool isPrimary,
-      VoidCallback onTap,
-      ) {
+    BuildContext context,
+    String title,
+    IconData icon,
+    bool isPrimary,
+    VoidCallback onTap,
+  ) {
     final theme = Theme.of(context);
     final color = isPrimary ? theme.primaryColor : theme.colorScheme.secondary;
 
@@ -273,15 +314,15 @@ Spacer(),
   }
 
   Widget _buildEvacuationSection(
-      BuildContext context, {
-        required String title,
-        required Color color,
-        required VoidCallback onAdd,
-        required VoidCallback onList,
-        required VoidCallback onHistory,
-        required VoidCallback onSync,
-        required String imgPath,
-      }) {
+    BuildContext context, {
+    required String title,
+    required Color color,
+    required VoidCallback onAdd,
+    required VoidCallback onList,
+    required VoidCallback onHistory,
+    required VoidCallback onSync,
+    required String imgPath,
+  }) {
     final theme = Theme.of(context);
     final isPrimary = color == theme.secondaryHeaderColor;
 
@@ -307,12 +348,12 @@ Spacer(),
                 ),
                 const SizedBox(width: 8),
                 Text(title, style: theme.textTheme.titleMedium),
-                const Spacer(),
-                IconButton(
-                  icon: Icon(Icons.sync, size: 20, color: color),
-                  onPressed: onSync,
-                  tooltip: 'Sync Data',
-                ),
+                // const Spacer(),
+                // IconButton(
+                //   icon: Icon(Icons.sync, size: 20, color: color),
+                //   onPressed: onSync,
+                //   tooltip: 'Sync Data',
+                // ),
               ],
             ),
             const SizedBox(height: 16),
@@ -392,9 +433,9 @@ Spacer(),
                     ),
                     image: profileImage.isNotEmpty
                         ? DecorationImage(
-                      image: NetworkImage(profileImage),
-                      fit: BoxFit.cover,
-                    )
+                            image: NetworkImage(profileImage),
+                            fit: BoxFit.cover,
+                          )
                         : null,
                   ),
                   child: Icon(

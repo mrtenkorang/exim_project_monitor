@@ -48,9 +48,6 @@ class LoginProvider extends ChangeNotifier {
 
       debugPrint("THE LOGIN RES ::::::: $response");
 
-      // Parse the response into a User object
-
-
       // initialize cache service
       _cacheService ??= await CacheService.getInstance();
 

@@ -5,7 +5,10 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui';
+import 'package:exim_project_monitor/core/cache_service/cache_service.dart';
+import 'package:exim_project_monitor/core/models/custom_user.dart';
 import 'package:exim_project_monitor/core/models/server_models/farmers_model/farmers_from_server.dart';
+import 'package:exim_project_monitor/core/models/user_model.dart';
 import 'package:exim_project_monitor/features/farm_management/polygon_drawing_tool/polygon_drawing_tool.dart';
 import 'package:exim_project_monitor/features/farm_management/polygon_drawing_tool/utils/double_value_trimmer.dart';
 import 'package:exim_project_monitor/widgets/custom_snackbar.dart';
@@ -29,8 +32,11 @@ class AddFarmProvider with ChangeNotifier {
 
   /// Build context for the add farm screen - used for dialogs and navigation
   late BuildContext addFarmScreenContext;
+  /// Loading state for farm submission
+  bool _isLoading = false;
 
-
+  /// Loading state getter
+  bool get isLoading => _isLoading;
 
   final _databaseHelper = DatabaseHelper();
   final _apiService = APIService();
@@ -124,13 +130,23 @@ class AddFarmProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  User? userInfo;
+
+  Future<void> loadUserInfo() async {
+    final cacheService = await CacheService.getInstance();
+    userInfo = await cacheService.getUserInfo();
+
+    debugPrint("USER INFO: ${userInfo?.toJson()}");
+    notifyListeners();
+  }
+
   // ==================================================================================
   // FORM CONTROLLERS
   // ==================================================================================
 
   // Original Controllers
   final TextEditingController farmLocationController = TextEditingController();
-  final TextEditingController projectIdController = TextEditingController();
+  // final TextEditingController projectIdController = TextEditingController();
   final TextEditingController farmSizeController = TextEditingController();
   final TextEditingController visitIdController = TextEditingController();
   final TextEditingController dateOfVisitController = TextEditingController();
@@ -178,7 +194,7 @@ class AddFarmProvider with ChangeNotifier {
   void dispose() {
     // Dispose all original controllers
     farmLocationController.dispose();
-    projectIdController.dispose();
+    // projectIdController.dispose();
     farmSizeController.dispose();
     visitIdController.dispose();
     dateOfVisitController.dispose();
@@ -480,7 +496,6 @@ class AddFarmProvider with ChangeNotifier {
 
       final farm = Farm(
         farmerId: selectedFarmer?.id,
-        projectId: projectIdController.text.trim(),
         visitId: visitIdController.text.trim(),
         dateOfVisit: _visitDate?.toString() ?? '',
         mainBuyers: mainBuyersController.text.trim(),
@@ -497,7 +512,7 @@ class AddFarmProvider with ChangeNotifier {
             .trim(),
         valueChainLinkages: valueChainLinkagesController.text.trim(),
         officerName: officerNameController.text.trim(),
-        officerId: officerIdController.text.trim(),
+        officerId: userInfo?.userID.toString() ?? "",
         observations: observationsController.text.trim(),
         issuesIdentified: issuesIdentifiedController.text.trim(),
         infrastructureIdentified: infrastructureIdentifiedController.text
@@ -573,17 +588,8 @@ class AddFarmProvider with ChangeNotifier {
 
   /// Saves the farm data to the local database and syncs with the server if online
   Future<bool> submitFarm() async {
-    debugPrint('Saving farm to database...');
-    if (!_validateForm()) {
-      debugPrint('Form validation failed');
-      if (addFarmScreenContext.mounted) {
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          const SnackBar(content: Text('Please fill all required fields')),
-        );
-      }
-      return false;
-    }
 
+    debugPrint('Form is valid. Saving farm...');
     try {
       // Show loading indicator
       if (addFarmScreenContext.mounted) {
@@ -597,10 +603,9 @@ class AddFarmProvider with ChangeNotifier {
           .map((e) => {'latitude': e.latitude, 'longitude': e.longitude})
           .toList();
 
-      debugPrint('Creating farm object with polygon data...');
       final farm = Farm(
+        // id: _farmId,
         farmerId: selectedFarmer?.id,
-        projectId: projectIdController.text.trim(),
         visitId: visitIdController.text.trim(),
         dateOfVisit: _visitDate?.toString() ?? '',
         mainBuyers: mainBuyersController.text.trim(),
@@ -617,7 +622,7 @@ class AddFarmProvider with ChangeNotifier {
             .trim(),
         valueChainLinkages: valueChainLinkagesController.text.trim(),
         officerName: officerNameController.text.trim(),
-        officerId: officerIdController.text.trim(),
+        officerId: userInfo?.userID.toString() ?? "",
         observations: observationsController.text.trim(),
         issuesIdentified: issuesIdentifiedController.text.trim(),
         infrastructureIdentified: infrastructureIdentifiedController.text
@@ -626,9 +631,8 @@ class AddFarmProvider with ChangeNotifier {
         followUpStatus: followUpStatusController.text.trim(),
         farmSize: farmSizeController.text.trim(),
         location: farmLocationController.text.trim(),
-        isSynced: false,
-
-        // NEW FIELDS
+        isSynced: true, // Set to false by default for new farms
+        // NEW FIELDS - You'll need to update your Farm model to include these
         latitude: double.tryParse(latitudeController.text) ?? 0.0,
         longitude: double.tryParse(longitudeController.text) ?? 0.0,
         cropType: cropTypeController.text.trim(),
@@ -643,40 +647,49 @@ class AddFarmProvider with ChangeNotifier {
         harvestDate: _harvestDate?.toString() ?? '',
       );
 
-      debugPrint('Saving farm with polygon data: ${farm.farmBoundaryPolygon}');
+      debugPrint('Submitting farm with polygon data: ${farm.toJsonOnline()}');
 
-      // Save to local database
-      final id = await _databaseHelper.insertFarm(farm);
-      debugPrint('Farm saved with ID: $id');
+      // Insert the farm into the database
+      dynamic farmResponse = await _apiService.submitFarm(farm);
 
-      // TODO: Add server sync logic here when online
-
-      // Show success message
+      // Hide loading indicator
       if (addFarmScreenContext.mounted) {
         Globals().endWait(addFarmScreenContext);
+      }
 
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          const SnackBar(content: Text('Farm saved successfully')),
+      // Show success message
+      if (addFarmScreenContext.mounted && farmResponse != null && farmResponse == 1) {
+        final id = await _databaseHelper.insertFarm(farm);
+        debugPrint('Farm submitted with ID: $id');
+        CustomSnackbar.show(
+          addFarmScreenContext,
+          message: "Farm submitted successfully",
+          type: SnackbarType.success,
         );
 
         // Navigate back after a short delay
         Future.delayed(const Duration(seconds: 1), () {
           if (addFarmScreenContext.mounted) {
-            Navigator.of(addFarmScreenContext).pop(true); // Return success
+            Navigator.of(addFarmScreenContext).pop(true);
           }
         });
       }
 
       return true;
     } catch (e, stackTrace) {
-      debugPrint('Error saving farm: $e');
+      debugPrint('Error submitting farm: $e');
       debugPrint('Stack trace: $stackTrace');
 
+      // Hide loading indicator
       if (addFarmScreenContext.mounted) {
         Globals().endWait(addFarmScreenContext);
+      }
 
-        ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
-          SnackBar(content: Text('Error saving farm: ${e.toString()}')),
+      if (addFarmScreenContext.mounted) {
+        CustomSnackbar.show(
+          addFarmScreenContext,
+          message: "An unknown error occurred",
+          type: SnackbarType.error,
         );
       }
 
@@ -936,7 +949,6 @@ class AddFarmProvider with ChangeNotifier {
   /// Clears all form fields
   void clearForm() {
     farmLocationController.clear();
-    projectIdController.clear();
     farmSizeController.clear();
     visitIdController.clear();
     dateOfVisitController.clear();

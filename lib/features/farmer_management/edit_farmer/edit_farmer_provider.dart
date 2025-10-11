@@ -1,4 +1,6 @@
 import 'dart:io' as io;
+import 'package:exim_project_monitor/core/services/api/api.dart';
+import 'package:exim_project_monitor/widgets/globals/globals.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
@@ -376,11 +378,12 @@ class EditFarmerProvider extends ChangeNotifier {
     debugPrint("Started save offline");
     try {
       Farmer farmer = Farmer(
+        id: _farmerId,
         idNumber: farmerIdNumberController.text,
         name: farmerNameController.text,
         phoneNumber: phoneNumberController.text,
         gender: farmerGenderController.text,
-        dateOfBirth: farmerDOBController.text,
+        dateOfBirth: _farmerDOB.toString(),
         // photoPath: farmerPhoto?.path,
         regionName: regionController.text,
         districtName: districtController.text,
@@ -402,11 +405,13 @@ class EditFarmerProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
+      Globals().startWait(context);
       final result = await dbHelper.updateFarmer(farmer);
-
+      Globals().endWait(context);
       debugPrint("Result: $result");
 
       if (result >= 0) {
+        Navigator.of(context).pop();
         Navigator.of(context).pop();
         CustomSnackbar.show(
           context,
@@ -418,6 +423,7 @@ class EditFarmerProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e, stackTrace) {
+      Globals().endWait(context);
       debugPrint('Error adding farmer: $e\n$stackTrace');
       CustomSnackbar.show(
         context,
@@ -427,5 +433,131 @@ class EditFarmerProvider extends ChangeNotifier {
 
     }
 
+  }
+
+
+  submitFarmer(BuildContext context) async {
+    try {
+      // Get district name using district code
+      String districtName;
+      try {
+        districtName = districts.firstWhere(
+          (district) => district.districtCode == selectedDistrictId,
+        ).district;
+      } catch (e) {
+        debugPrint('Error finding district: $e');
+        // Provide a default value or handle the error as needed
+        districtName = districts.isNotEmpty ? districts.first.district : 'Unknown District';
+      }
+
+
+      // Convert image to base64 if available
+      String? photoBase64;
+      if (farmerPhoto?.file != null) {
+        photoBase64 = await PickedMedia.fileToBase64(farmerPhoto!.file!);
+      } else if (farmerPhoto?.base64String != null) {
+        photoBase64 = farmerPhoto!.base64String;
+      }
+
+      Farmer farmer = Farmer(
+        id: _farmerId,
+        name: farmerNameController.text,
+        idNumber: farmerIdNumberController.text,
+        phoneNumber: phoneNumberController.text,
+        // photoPath: photoBase64,
+        gender: farmerGenderController.text,
+        dateOfBirth: _farmerDOB.toString(),
+        regionName: regionController.text,
+        districtName: districtName,
+        community: communityController.text,
+        projectId: selectedProjectID ?? '',
+        businessName: businessNameController.text,
+        // cropType: cropTypeController.text,
+        // varietyBreed: varietyBreedController.text,
+        // plantingDate: _plantingDate,
+        // plantingDensity: plantingDensityController.text,
+        // laborHired: laborHiredController.text,
+        // estimatedYield: estimatedYieldController.text,
+        // previousYield: yieldInPrevSeason.text,
+        // harvestDate: _harvestDate,
+        createdAt: DateTime.now(),
+        isSynced: SyncStatus.synced,
+      );
+
+      final farmerData = farmer.toJsonOnline();
+
+      debugPrint("THE FARMER DATA :::::::::: $farmerData");
+
+      /// init api service
+      final apiService = APIService();
+
+      /// show loading
+      _isLoading = true;
+      notifyListeners();
+
+      /// SHow loading indicator
+      Globals().startWait(context);
+      await apiService.submitFarmer(farmer).then((response) async {
+        // Update the farmer's sync status to synced
+        final updatedFarmer = farmer.copyWith(
+          isSynced: SyncStatus.synced,
+
+        );
+
+        // Update the farmer in the local database
+        await dbHelper.updateFarmer(updatedFarmer);
+        
+        _isLoading = false;
+        notifyListeners();
+
+        if (context.mounted) {
+          Navigator.pop(context);
+          Navigator.pop(context);
+          CustomSnackbar.show(
+            context,
+            message: 'Farmer submitted successfully!',
+            type: SnackbarType.success,
+          );
+          clearForm();
+        }
+      }).catchError((error, stackTrace) async {
+        /// remove loading indicator
+        Globals().endWait(context);
+        // On error, update the sync status to failed
+        // final failedFarmer = farmer.copyWith(
+        //   isSynced: SyncStatus.failed,
+        //   syncError: error.toString(),
+        // );
+        // await dbHelper.updateFarmer(failedFarmer);
+        _isLoading = false;
+        notifyListeners();
+        debugPrint('Error adding farmer via API: $error');
+        debugPrint('Error adding farmer via API: $stackTrace');
+        CustomSnackbar.show(
+          context,
+          message: 'Error adding farmer: $error',
+          type: SnackbarType.error,
+        );
+      });
+
+      /// remove loading indicator
+      Globals().endWait(context);
+
+      final data = farmer.toJsonOnline();
+      debugPrint("THE DATA: $data");
+      //
+      // _isLoading = true;
+      // notifyListeners();
+
+    } catch (e, stackTrace) {
+      _isLoading = false;
+      notifyListeners();
+      debugPrint('Error adding farmer: $e\n$stackTrace');
+      CustomSnackbar.show(
+        context,
+        message: 'Error adding farmer: $e',
+        type: SnackbarType.error,
+      );
+    }
   }
 }

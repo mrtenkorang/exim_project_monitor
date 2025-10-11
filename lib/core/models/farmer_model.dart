@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 class Farmer {
   final int? id;
   final String name;
@@ -46,6 +48,38 @@ class Farmer {
     required this.isSynced,
   }) : createdAt = createdAt ?? DateTime.now();
 
+  Farmer copyWith({
+    int? id,
+    String? name,
+    String? idNumber,
+    String? phoneNumber,
+    String? gender,
+    String? dateOfBirth,
+    String? projectId,
+    String? regionName,
+    String? districtName,
+    String? community,
+    String? businessName,
+    DateTime? createdAt,
+    int? isSynced,
+  }) {
+    return Farmer(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      idNumber: idNumber ?? this.idNumber,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      gender: gender ?? this.gender,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      projectId: projectId ?? this.projectId,
+      regionName: regionName ?? this.regionName,
+      districtName: districtName ?? this.districtName,
+      community: community ?? this.community,
+      businessName: businessName ?? this.businessName,
+      createdAt: createdAt ?? this.createdAt,
+      isSynced: isSynced ?? this.isSynced,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -56,7 +90,7 @@ class Farmer {
       'gender': gender,
       'dateOfBirth': dateOfBirth,
       // 'photoPath': photoPath,
-      'regionName': regionName,
+      'region_name': regionName,
       'districtName': districtName,
       'community': community,
       'businessName': businessName,
@@ -83,7 +117,7 @@ class Farmer {
       gender: map['gender'],
       dateOfBirth: map['dateOfBirth'],
       // photoPath: map['photoPath'],
-      regionName: map['regionName'],
+      regionName: map['region_name'],
       districtName: map['districtName'],
       community: map['community'],
       businessName: map['businessName'],
@@ -115,6 +149,16 @@ class Farmer {
       parsedDob = DateTime.now();
     }
 
+    String formatDate(String? dateStr) {
+      if (dateStr == null || dateStr.isEmpty) return '';
+      try {
+        final date = DateTime.tryParse(dateStr);
+        return date != null ? DateFormat('yyyy-MM-dd').format(date) : '';
+      } catch (e) {
+        return '';
+      }
+    }
+
     return {
       'first_name': name.split(' ').first,
       'last_name': name.split(' ').last,
@@ -122,7 +166,7 @@ class Farmer {
       'email': '',
       'district_name': districtName,
       'gender': gender,
-      'date_of_birth': _formatDate(parsedDob),
+      'date_of_birth': formatDate(dateOfBirth),
       'address': '',
       'bank_account_number': '',
       'bank_name': '',
