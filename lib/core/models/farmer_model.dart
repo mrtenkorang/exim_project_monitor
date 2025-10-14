@@ -178,6 +178,7 @@ class Farmer {
       'extension_services': false,
       'business_name': businessName,
       'community': community,
+      'project': int.tryParse(projectId),
       // 'variety': varietyBreed,
       // 'planting_date': _formatDate(plantingDate),
       // 'labour_hired': laborHired,

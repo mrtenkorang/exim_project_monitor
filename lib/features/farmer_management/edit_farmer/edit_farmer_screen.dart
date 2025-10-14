@@ -90,10 +90,11 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
                       farmerProvider.phoneNumberController,
                       keyboardType: TextInputType.phone,
                     ),
-                    _buildTitleAndField(
-                      "Gender",
-                      farmerProvider.farmerGenderController,
-                    ),
+                    _buildGenderDropdown(farmerProvider),
+                    // _buildTitleAndField(
+                    //   "Gender",
+                    //   farmerProvider.farmerGenderController,
+                    // ),
                     DateField(
                       label: "Farmer's date of birth (DOB)",
                       initialDate: farmerProvider.farmerDOB,
@@ -457,6 +458,43 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildGenderDropdown(EditFarmerProvider farmerProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Gender"),
+        const SizedBox(height: 5),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border.all(color: Colors.grey.withOpacity(0.5)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: DropdownButton<String>(
+            dropdownColor: Theme.of(context).colorScheme.surface,
+            value: farmerProvider.genders.contains(farmerProvider.selectedGender)
+                ? farmerProvider.selectedGender
+                : null,
+            onChanged: (String? newValue) {
+              farmerProvider.setSelectedGender(newValue);
+            },
+            items: farmerProvider.genders.map<DropdownMenuItem<String>>((String gender) {
+              return DropdownMenuItem<String>(
+                value: gender,
+                child: Text(gender),
+              );
+            }).toList(),
+            isExpanded: true,
+            underline: const SizedBox(),
+            hint: const Text('Select gender', style: TextStyle(color: Colors.grey),),
+          ),
+        ),
+        const SizedBox(height: 10),
       ],
     );
   }

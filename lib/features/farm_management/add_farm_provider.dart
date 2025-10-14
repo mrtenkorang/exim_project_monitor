@@ -521,8 +521,7 @@ class AddFarmProvider with ChangeNotifier {
         followUpStatus: followUpStatusController.text.trim(),
         farmSize: farmSizeController.text.trim(),
         location: farmLocationController.text.trim(),
-        isSynced: false, // Set to false by default for new farms
-        // NEW FIELDS - You'll need to update your Farm model to include these
+        isSynced: false,
         latitude: double.tryParse(latitudeController.text) ?? 0.0,
         longitude: double.tryParse(longitudeController.text) ?? 0.0,
         cropType: cropTypeController.text.trim(),
@@ -555,6 +554,9 @@ class AddFarmProvider with ChangeNotifier {
           message: "Farm saved successfully",
           type: SnackbarType.success,
         );
+
+        // clear the form
+        clearForm();
 
         // Navigate back after a short delay
         Future.delayed(const Duration(seconds: 1), () {
@@ -631,8 +633,7 @@ class AddFarmProvider with ChangeNotifier {
         followUpStatus: followUpStatusController.text.trim(),
         farmSize: farmSizeController.text.trim(),
         location: farmLocationController.text.trim(),
-        isSynced: true, // Set to false by default for new farms
-        // NEW FIELDS - You'll need to update your Farm model to include these
+        isSynced: true,
         latitude: double.tryParse(latitudeController.text) ?? 0.0,
         longitude: double.tryParse(longitudeController.text) ?? 0.0,
         cropType: cropTypeController.text.trim(),
@@ -667,6 +668,9 @@ class AddFarmProvider with ChangeNotifier {
           type: SnackbarType.success,
         );
 
+        // Clear the form
+        clearForm();
+        
         // Navigate back after a short delay
         Future.delayed(const Duration(seconds: 1), () {
           if (addFarmScreenContext.mounted) {
@@ -985,6 +989,8 @@ class AddFarmProvider with ChangeNotifier {
     _plantingDate = null;
     _visitDate = null;
     _hasFarmBoundaryPolygon = false;
+    _selectedFarmer = null;
+
 
     // Clear polygon
     polygon = null;

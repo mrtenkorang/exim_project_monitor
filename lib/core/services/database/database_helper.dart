@@ -658,6 +658,28 @@ class DatabaseHelper {
     return null;
   }
 
+  /// Get Farmer by status
+  Future<List<Farmer>> getFarmerByStatus(int status) async {
+    final db = await database;
+    final maps = await db.query(
+      tableFarmers,
+      where: '$columnStatus = ?',
+      whereArgs: [status],
+    );
+    return maps.map((map) => Farmer.fromMap(map)).toList();
+  }
+
+  /// Get Farm by status
+  Future<List<Farm>> getFarmByStatus(int status) async {
+    final db = await database;
+    final maps = await db.query(
+      tableFarms,
+      where: '$columnStatus = ?',
+      whereArgs: [status],
+    );
+    return maps.map((map) => Farm.fromMap(map)).toList();
+  }
+
   /// Retrieves a farmer by ID number
   Future<Farmer?> getFarmerByIdNumber(String idNumber) async {
     final db = await database;
@@ -948,6 +970,19 @@ class DatabaseHelper {
     return maps.map((map) => Project.fromJson(map)).toList();
   }
 
+  Future<Project> getProjectByCode(String projectCode) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      tableProjects,
+      where: '$columnCode = ?',
+      whereArgs: [projectCode],
+    );
+    if (maps.isNotEmpty) {
+      return Project.fromJson(maps.first);
+    }
+    throw Exception('Project not found');
+  }
+
   Future<Project?> getProjectById(int id) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
@@ -961,18 +996,18 @@ class DatabaseHelper {
     return null;
   }
 
-  Future<Project?> getProjectByCode(String projectCode) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      tableProjects,
-      where: '$columnCode = ?',
-      whereArgs: [projectCode],
-    );
-    if (maps.isNotEmpty) {
-      return Project.fromJson(maps.first);
-    }
-    return null;
-  }
+  // Future<Project?> getProjectByCode(String projectCode) async {
+  //   final db = await database;
+  //   final List<Map<String, dynamic>> maps = await db.query(
+  //     tableProjects,
+  //     where: '$columnCode = ?',
+  //     whereArgs: [projectCode],
+  //   );
+  //   if (maps.isNotEmpty) {
+  //     return Project.fromJson(maps.first);
+  //   }
+  //   return null;
+  // }
 
   Future<int> updateProject(Project project) async {
     final db = await database;

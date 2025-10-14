@@ -254,14 +254,14 @@ class FarmerDetailScreen extends StatelessWidget {
                 color: colorScheme.onSurface.withOpacity(0.5),
               ),
             ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () {
-                // TODO: Implement add new farm
-              },
-              icon: const Icon(Icons.add_location_alt_outlined),
-              label: const Text('Add First Farm'),
-            ),
+            // const SizedBox(height: 24),
+            // FilledButton.icon(
+            //   onPressed: () {
+            //     // TODO: Implement add new farm
+            //   },
+            //   icon: const Icon(Icons.add_location_alt_outlined),
+            //   label: const Text('Add First Farm'),
+            // ),
           ],
         ),
       );

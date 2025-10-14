@@ -1,4 +1,5 @@
 import 'dart:io' as io;
+import 'package:exim_project_monitor/core/models/projects_model.dart';
 import 'package:exim_project_monitor/core/services/api/api.dart';
 import 'package:exim_project_monitor/widgets/globals/globals.dart';
 import 'package:flutter/material.dart';
@@ -44,11 +45,23 @@ class EditFarmerProvider extends ChangeNotifier {
   String? _selectedDistrictId;
   String? _selectedProjectID;
 
+  String? _selectedGender;
+  String? get selectedGender => _selectedGender;
+
+
+  List<String> genders = ["Male", "Female"];
+
 
   // Getters
   String? get selectedRegionId => _selectedRegionId;
   String? get selectedDistrictId => _selectedDistrictId;
 
+
+  void setSelectedGender(String? val) {
+    _selectedGender = val;
+    farmerGenderController.text = val ?? '';
+    notifyListeners();
+  }
 
   // Setters
   void setSelectedRegion(String? regionId) {
@@ -186,6 +199,7 @@ class EditFarmerProvider extends ChangeNotifier {
       projectIdController.text = farmer.projectId;
 
       setSelectedProject(farmer.projectId);
+      setSelectedGender(farmer.gender);
       
       // Handle date of birth
       _farmerDOB = _parseDate(farmer.dateOfBirth);
@@ -438,6 +452,9 @@ class EditFarmerProvider extends ChangeNotifier {
 
   submitFarmer(BuildContext context) async {
     try {
+
+      //get project from local db
+      Project? project = await dbHelper.getProjectByCode(selectedProjectID!);
       // Get district name using district code
       String districtName;
       try {
@@ -470,7 +487,7 @@ class EditFarmerProvider extends ChangeNotifier {
         regionName: regionController.text,
         districtName: districtName,
         community: communityController.text,
-        projectId: selectedProjectID ?? '',
+        projectId: project.id.toString(),
         businessName: businessNameController.text,
         // cropType: cropTypeController.text,
         // varietyBreed: varietyBreedController.text,
