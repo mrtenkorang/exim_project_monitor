@@ -15,7 +15,7 @@
     </queries>
 
     <application
-        android:label="Exim Project Monitor"
+        android:label="Ghana Exim Bank"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

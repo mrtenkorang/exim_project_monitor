@@ -37,6 +37,41 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 20),
+
+                  _buildTitleAndField(
+                    "Farmer name",
+                    farmerProvider.farmerNameController,
+                  ),
+                  _buildTitleAndField(
+                    "Farmer Id / Ghana card number",
+                    farmerProvider.farmerIdNumberController,
+                    keyboardType: TextInputType.number,
+                  ),
+                  _buildGenderDropdown(farmerProvider),
+                  // _buildTitleAndField(
+                  //   "Gender",
+                  //   farmerProvider.farmerGenderController,
+                  // ),
+                  DateField(
+                    label: "Farmer's date of birth (DOB)",
+                    onDateSelected: (date) {
+                      farmerProvider.setFarmerDOB(date);
+                      debugPrint('Selected date: $date');
+                    },
+                  ),
+
+                  _buildTitleAndField(
+                    "Farmer's phone number",
+                    farmerProvider.phoneNumberController,
+                    keyboardType: TextInputType.phone,
+                  ),
+
+                  _buildTitleAndField(
+                    "Business Name",
+                    farmerProvider.businessNameController,
+                  ),
+
+
                   // ImageFieldCard(
                   //   onTap: () => farmerProvider.pickMedia(source: 1),
                   //   image: farmerProvider.farmerPhoto?.file,
@@ -51,36 +86,7 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
                     "Community",
                     farmerProvider.communityController,
                   ),
-                  _buildTitleAndField(
-                    "Farmer name",
-                    farmerProvider.farmerNameController,
-                  ),
-                  _buildTitleAndField(
-                    "Farmer Id / Ghana card number",
-                    farmerProvider.farmerIdNumberController,
-                    keyboardType: TextInputType.number,
-                  ),
-                  _buildTitleAndField(
-                    "Business Name",
-                    farmerProvider.businessNameController,
-                  ),
-                  _buildTitleAndField(
-                    "Farmer's phone number",
-                    farmerProvider.phoneNumberController,
-                    keyboardType: TextInputType.phone,
-                  ),
-                  _buildGenderDropdown(farmerProvider),
-                  // _buildTitleAndField(
-                  //   "Gender",
-                  //   farmerProvider.farmerGenderController,
-                  // ),
-                  DateField(
-                    label: "Farmer's date of birth (DOB)",
-                    onDateSelected: (date) {
-                      farmerProvider.setFarmerDOB(date);
-                      debugPrint('Selected date: $date');
-                    },
-                  ),
+
                   const SizedBox(height: 10),
                   // _buildTitleAndField(
                   //   "Crop Type",
