@@ -155,10 +155,10 @@ class AppThemeData {
 
   static ThemeData get lightTheme {
     const colorScheme = ColorScheme.light(
-      primary: Color(0xFFFFC107),
+      primary: Color(0xFF2196F3),
       primaryContainer: Color(0xFFFFECB3),
       onPrimary: Colors.black87,
-      secondary: Color(0xFF2196F3),
+      secondary: Color(0xFFFFC107),
       secondaryContainer: Color(0xFFBBDEFB),
       onSecondary: Colors.white,
       background: Color(0xFFFAFAFA),

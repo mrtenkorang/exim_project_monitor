@@ -56,28 +56,28 @@ class _EditFarmScreenState extends State<EditFarmScreen> {
                     const SizedBox(height: 20),
 
                     // GPS Coordinates Section
-                    _buildSectionHeader("GPS Coordinates"),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildTitleAndField(
-                              "Latitude",
-                              farmProvider.latitudeController,
-                              keyboardType: TextInputType.none,
-                              enabled: false
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildTitleAndField(
-                              "Longitude",
-                              farmProvider.longitudeController,
-                              keyboardType: TextInputType.none,
-                              enabled: false
-                          ),
-                        ),
-                      ],
-                    ),
+                    // _buildSectionHeader("GPS Coordinates"),
+                    // Row(
+                    //   children: [
+                    //     Expanded(
+                    //       child: _buildTitleAndField(
+                    //           "Latitude",
+                    //           farmProvider.latitudeController,
+                    //           keyboardType: TextInputType.none,
+                    //           enabled: false
+                    //       ),
+                    //     ),
+                    //     const SizedBox(width: 10),
+                    //     Expanded(
+                    //       child: _buildTitleAndField(
+                    //           "Longitude",
+                    //           farmProvider.longitudeController,
+                    //           keyboardType: TextInputType.none,
+                    //           enabled: false
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
 
                     // Farmer Selection Section
                     _buildSectionHeader("Farmer Information"),
@@ -170,7 +170,7 @@ class _EditFarmScreenState extends State<EditFarmScreen> {
                       "Main Buyers",
                       farmProvider.mainBuyersController,
                     ),
-                    _buildFarmBoundaryToggle(farmProvider),
+                    // _buildFarmBoundaryToggle(farmProvider),
                     _buildTitleAndField(
                       "Land Use Classification",
                       farmProvider.landUseClassificationController,
