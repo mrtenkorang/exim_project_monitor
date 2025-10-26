@@ -86,17 +86,31 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
 
               // District Filter
               const Text('District:'),
-              DropdownButtonFormField<String>(
-                value: provider.selectedDistrict,
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('All Districts')),
-                  ...provider.availableDistricts.map((district) {
-                    return DropdownMenuItem(value: district, child: Text(district));
-                  }),
-                ],
-                onChanged: (value) {
-                  provider.setDistrictFilter(value);
-                },
+              SizedBox(
+                width: double.infinity, // Take full width of parent
+                child: DropdownButtonFormField<String>(
+                  isExpanded: true, // Allow the dropdown to expand
+                  value: provider.selectedDistrict,
+                  items: [
+                    const DropdownMenuItem(
+                      value: null, 
+                      child: Text('All Districts', overflow: TextOverflow.ellipsis),
+                    ),
+                    ...provider.availableDistricts.map((district) {
+                      return DropdownMenuItem(
+                        value: district, 
+                        child: Text(
+                          district,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) {
+                    provider.setDistrictFilter(value);
+                  },
+                ),
               ),
               const SizedBox(height: 16),
 

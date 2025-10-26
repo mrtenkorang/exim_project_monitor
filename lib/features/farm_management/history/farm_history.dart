@@ -269,25 +269,30 @@ class _FarmList extends StatelessWidget {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Confirm Deletion'),
-          content: const Text('Are you sure you want to delete this farm? This action cannot be undone.'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('CANCEL'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+            title: const Text('Confirm Deletion'),
+            content: const Text('Are you sure you want to delete this farm? This action cannot be undone.'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('CANCEL'),
+                onPressed: () => Navigator.of(context).pop(),
               ),
-              child: const Text('DELETE'),
-              onPressed: () async {
-                Navigator.of(context).pop(); // Close the dialog
-                _deleteFarm(context, farm);
-              },
-            ),
-          ],
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+                child: const Text('DELETE'),
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  _deleteFarm(context, farm);
+                  setState(() {});
+                },
+              ),
+            ],
+          );
+          }
         );
       },
     );
