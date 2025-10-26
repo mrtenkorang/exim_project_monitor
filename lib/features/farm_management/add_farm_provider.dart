@@ -382,9 +382,9 @@ class AddFarmProvider with ChangeNotifier {
       }
 
       // Show loading indicator
-      if (addFarmScreenContext.mounted) {
-        Globals().startWait(addFarmScreenContext);
-      }
+      // if (addFarmScreenContext.mounted) {
+      //   Globals().startWait(addFarmScreenContext);
+      // }
 
       // Get current position
       gl.Position position = await gl.Geolocator.getCurrentPosition(
@@ -407,9 +407,9 @@ class AddFarmProvider with ChangeNotifier {
       );
 
       // Hide loading indicator
-      if (addFarmScreenContext.mounted) {
-        Globals().endWait(addFarmScreenContext);
-      }
+      // if (addFarmScreenContext.mounted) {
+      //   Globals().endWait(addFarmScreenContext);
+      // }
 
       if (addFarmScreenContext.mounted) {
         ScaffoldMessenger.of(addFarmScreenContext).showSnackBar(
