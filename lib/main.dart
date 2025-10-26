@@ -89,7 +89,7 @@ class EximProjectMonitorApp extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return GetMaterialApp(
-      title: 'Exim Project Monitor',
+      title: 'Ghana Exim Bank',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

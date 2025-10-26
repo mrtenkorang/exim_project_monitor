@@ -1013,21 +1013,17 @@ class _PolygonDrawingToolState extends State<PolygonDrawingTool>
                                         (double.parse(
                                               currentPosition?.accuracy
                                                       .toString() ??
-                                                  '100.0',
-                                            ) >=
-                                            30)
+                                                  '10.0',
+                                            ) >
+                                            3)
                                         ? Colors.black12
                                         : Theme.of(context).colorScheme.primary,
 
                                     // verticalPadding: 0.0,
                                     // horizontalPadding: 8.0,
+
                                     onTap: () {
-                                      debugPrint(
-                                        "Record point :::::::: ${currentPosition?.accuracy}",
-                                      );
-                                      debugPrint(
-                                        "Record point :::::::: ${widget.persistMaxAccuracy}",
-                                      );
+
                                       userCurrentLocation!.getUserLocation(
                                         forceEnableLocation: true,
                                         onLocationEnabled: (isEnabled, currentPosition) {
@@ -1037,8 +1033,8 @@ class _PolygonDrawingToolState extends State<PolygonDrawingTool>
                                               if (double.parse(
                                                     currentPosition!.accuracy
                                                         .toString(),
-                                                  ) <=
-                                                  30) {
+                                                  ) <
+                                                  3) {
                                                 if (isLocationInsidePolygon(
                                                   LatLng(
                                                     currentPosition.latitude!,
@@ -1166,6 +1162,9 @@ class _PolygonDrawingToolState extends State<PolygonDrawingTool>
                                                   "The accuracy must be ${3} or below",
                                                   messageText: const Text(
                                                     "The accuracy must be ${3} or below",
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                    ),
                                                   ),
                                                   colorText: Colors.white,
                                                   snackPosition:
