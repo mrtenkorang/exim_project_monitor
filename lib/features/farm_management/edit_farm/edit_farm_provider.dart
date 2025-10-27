@@ -9,6 +9,7 @@ import 'package:exim_project_monitor/core/cache_service/cache_service.dart';
 import 'package:exim_project_monitor/core/models/user_model.dart';
 import 'package:exim_project_monitor/features/farm_management/polygon_drawing_tool/polygon_drawing_tool.dart';
 import 'package:exim_project_monitor/features/farm_management/polygon_drawing_tool/utils/double_value_trimmer.dart';
+import 'package:exim_project_monitor/features/screen_wrapper/screen_wrapper.dart';
 import 'package:exim_project_monitor/widgets/custom_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -102,12 +103,15 @@ class EditFarmProvider with ChangeNotifier {
 
   Future<void> getFarmerById() async {
     if (_selectedFarmer != null) {
-      farmer = await DatabaseHelper().getFarmerFromServerById(_selectedFarmer!.id);
+      farmer = await DatabaseHelper().getFarmerFromServerById(
+        _selectedFarmer!.id,
+      );
       notifyListeners();
     } else {
       debugPrint("No farmer selected");
     }
   }
+
   /// Set the selected farmer
   setSelectedFarmer(FarmerFromServerModel? farmer) {
     _selectedFarmer = farmer;
@@ -138,7 +142,8 @@ class EditFarmProvider with ChangeNotifier {
   // Crop Information
   final TextEditingController cropTypeController = TextEditingController();
   final TextEditingController varietyBreedController = TextEditingController();
-  final TextEditingController plantingDensityController = TextEditingController();
+  final TextEditingController plantingDensityController =
+      TextEditingController();
 
   // Labour Information
   final TextEditingController labourHiredController = TextEditingController();
@@ -146,18 +151,25 @@ class EditFarmProvider with ChangeNotifier {
   final TextEditingController femaleWorkersController = TextEditingController();
 
   // Yield Information
-  final TextEditingController estimatedYieldController = TextEditingController();
+  final TextEditingController estimatedYieldController =
+      TextEditingController();
   final TextEditingController previousYieldController = TextEditingController();
 
   // Secondary Data
   final TextEditingController mainBuyersController = TextEditingController();
-  final TextEditingController farmBoundaryPolygonController = TextEditingController();
-  final TextEditingController landUseClassificationController = TextEditingController();
+  final TextEditingController farmBoundaryPolygonController =
+      TextEditingController();
+  final TextEditingController landUseClassificationController =
+      TextEditingController();
   final TextEditingController accessibilityController = TextEditingController();
-  final TextEditingController proximityToProcessingFacilityController = TextEditingController();
-  final TextEditingController serviceProviderController = TextEditingController();
-  final TextEditingController cooperativesOrFarmerGroupsController = TextEditingController();
-  final TextEditingController valueChainLinkagesController = TextEditingController();
+  final TextEditingController proximityToProcessingFacilityController =
+      TextEditingController();
+  final TextEditingController serviceProviderController =
+      TextEditingController();
+  final TextEditingController cooperativesOrFarmerGroupsController =
+      TextEditingController();
+  final TextEditingController valueChainLinkagesController =
+      TextEditingController();
 
   // Officer Information
   final TextEditingController officerNameController = TextEditingController();
@@ -165,11 +177,14 @@ class EditFarmProvider with ChangeNotifier {
 
   // Assessment
   final TextEditingController observationsController = TextEditingController();
-  final TextEditingController issuesIdentifiedController = TextEditingController();
-  final TextEditingController infrastructureIdentifiedController = TextEditingController();
-  final TextEditingController recommendedActionsController = TextEditingController();
-  final TextEditingController followUpStatusController = TextEditingController();
-
+  final TextEditingController issuesIdentifiedController =
+      TextEditingController();
+  final TextEditingController infrastructureIdentifiedController =
+      TextEditingController();
+  final TextEditingController recommendedActionsController =
+      TextEditingController();
+  final TextEditingController followUpStatusController =
+      TextEditingController();
 
   int? _farmId;
   int? get farmId => _farmId;
@@ -179,10 +194,11 @@ class EditFarmProvider with ChangeNotifier {
   Future<void> initFarmData(Farm farm) async {
     try {
       debugPrint("Initializing farm data: ${farm.toJson()}");
-      
+
       // First, get the farmer from the database using farm.farmerId
-      _farmersFromServer = await DatabaseHelper().getAllFarmersFromServerWithRelations();
-      
+      _farmersFromServer = await DatabaseHelper()
+          .getAllFarmersFromServerWithRelations();
+
       // Parse and set the farm boundary polygon if it exists
       if (farm.farmBoundaryPolygon != null) {
         try {
@@ -194,7 +210,7 @@ class EditFarmProvider with ChangeNotifier {
               double.parse(point['longitude'].toString()),
             );
           }).toList();
-          
+
           if (polygonPoints.isNotEmpty) {
             polygon = Polygon(
               polygonId: const PolygonId('farm_boundary'),
@@ -211,7 +227,6 @@ class EditFarmProvider with ChangeNotifier {
               return Marker(
                 markerId: MarkerId(point.toString()),
                 position: point,
-
               );
             }).toSet();
           }
@@ -223,12 +238,12 @@ class EditFarmProvider with ChangeNotifier {
       _farmId = farm.id;
       // Set the project ID and update the selected project
 
-
       // Parse dates from the farm object
       if (farm.dateOfVisit.isNotEmpty) {
         try {
           _dateOfVisit = DateTime.parse(farm.dateOfVisit);
-          dateOfVisitController.text = "${_dateOfVisit!.year}-${_dateOfVisit!.month.toString().padLeft(2, '0')}-${_dateOfVisit!.day.toString().padLeft(2, '0')}";
+          dateOfVisitController.text =
+              "${_dateOfVisit!.year}-${_dateOfVisit!.month.toString().padLeft(2, '0')}-${_dateOfVisit!.day.toString().padLeft(2, '0')}";
         } catch (e) {
           debugPrint('Error parsing visit date: $e');
           dateOfVisitController.text = farm.dateOfVisit;
@@ -287,9 +302,11 @@ class EditFarmProvider with ChangeNotifier {
       mainBuyersController.text = farm.mainBuyers;
       landUseClassificationController.text = farm.landUseClassification;
       accessibilityController.text = farm.accessibility;
-      proximityToProcessingFacilityController.text = farm.proximityToProcessingFacility;
+      proximityToProcessingFacilityController.text =
+          farm.proximityToProcessingFacility;
       serviceProviderController.text = farm.serviceProvider;
-      cooperativesOrFarmerGroupsController.text = farm.cooperativesOrFarmerGroups;
+      cooperativesOrFarmerGroupsController.text =
+          farm.cooperativesOrFarmerGroups;
       valueChainLinkagesController.text = farm.valueChainLinkages;
       officerNameController.text = farm.officerName;
       // officerIdController.text = farm.officerId;
@@ -302,17 +319,19 @@ class EditFarmProvider with ChangeNotifier {
       // Set farm boundary polygon status
       _hasFarmBoundaryPolygon = farm.hasBoundaryPolygon;
 
-
-      
       // Set the selected farmer based on farmerId
       if (farm.farmerId != null && farm.farmerId != 0) {
         try {
           _selectedFarmer = _farmersFromServer.firstWhere(
             (farmer) => farmer.id == farm.farmerId,
           );
-          debugPrint('Selected farmer: ${_selectedFarmer?.firstName} ${_selectedFarmer?.lastName}');
+          debugPrint(
+            'Selected farmer: ${_selectedFarmer?.firstName} ${_selectedFarmer?.lastName}',
+          );
         } catch (e) {
-          debugPrint('Farmer with ID ${farm.farmerId} not found in local database');
+          debugPrint(
+            'Farmer with ID ${farm.farmerId} not found in local database',
+          );
           _selectedFarmer = null;
         }
       }
@@ -553,18 +572,13 @@ class EditFarmProvider with ChangeNotifier {
 
       // Show success message
       if (addFarmScreenContext.mounted) {
+        Navigator.pop(addFarmScreenContext);
+        Navigator.pop(addFarmScreenContext);
         CustomSnackbar.show(
           addFarmScreenContext,
           message: "Farm updated successfully",
           type: SnackbarType.success,
         );
-
-        // Navigate back after a short delay
-        Future.delayed(const Duration(seconds: 1), () {
-          if (addFarmScreenContext.mounted) {
-            Navigator.of(addFarmScreenContext).pop(true); // Return success
-          }
-        });
       }
 
       return true;
@@ -592,7 +606,6 @@ class EditFarmProvider with ChangeNotifier {
   /// Saves the farm data to the local database and syncs with the server if online
   /// Saves the farm data to the local database and syncs with the server if online
   Future<bool> submitFarm() async {
-
     debugPrint('Form is valid. Saving farm...');
     try {
       // Show loading indicator
@@ -662,21 +675,18 @@ class EditFarmProvider with ChangeNotifier {
       }
 
       // Show success message
-      if (addFarmScreenContext.mounted && farmResponse != null && farmResponse == 1) {
+      if (addFarmScreenContext.mounted &&
+          farmResponse != null &&
+          farmResponse == 1) {
         final id = await _databaseHelper.updateFarm(farm);
         debugPrint('Farm submitted with ID: $id');
+        Navigator.pop(addFarmScreenContext);
+        Navigator.pop(addFarmScreenContext);
         CustomSnackbar.show(
           addFarmScreenContext,
           message: "Farm submitted successfully",
           type: SnackbarType.success,
         );
-
-        // Navigate back after a short delay
-        Future.delayed(const Duration(seconds: 1), () {
-          if (addFarmScreenContext.mounted) {
-            Navigator.of(addFarmScreenContext).pop(true);
-          }
-        });
       }
 
       return true;
@@ -786,12 +796,12 @@ class EditFarmProvider with ChangeNotifier {
     LatLng p2;
     LatLng p3;
     int count = points.length;
-    
+
     // Calculate the area using the shoelace formula
     for (int i = 1; i < count - 1; i++) {
       p2 = points[i];
       p3 = points[i + 1];
-      
+
       // Using the spherical excess formula for more accurate results on Earth's surface
       final lat1 = p1.latitude * (pi / 180);
       final lon1 = p1.longitude * (pi / 180);
@@ -799,24 +809,50 @@ class EditFarmProvider with ChangeNotifier {
       final lon2 = p2.longitude * (pi / 180);
       final lat3 = p3.latitude * (pi / 180);
       final lon3 = p3.longitude * (pi / 180);
-      
+
       // Using the spherical excess formula (l'Huilier's theorem)
-      final a = 2 * asin(sqrt(pow(sin((lat1 - lat2) / 2), 2) + 
-          cos(lat1) * cos(lat2) * pow(sin((lon1 - lon2) / 2), 2)));
-      final b = 2 * asin(sqrt(pow(sin((lat2 - lat3) / 2), 2) + 
-          cos(lat2) * cos(lat3) * pow(sin((lon2 - lon3) / 2), 2)));
-      final c = 2 * asin(sqrt(pow(sin((lat3 - lat1) / 2), 2) + 
-          cos(lat3) * cos(lat1) * pow(sin((lon3 - lon1) / 2), 2)));
-      
+      final a =
+          2 *
+          asin(
+            sqrt(
+              pow(sin((lat1 - lat2) / 2), 2) +
+                  cos(lat1) * cos(lat2) * pow(sin((lon1 - lon2) / 2), 2),
+            ),
+          );
+      final b =
+          2 *
+          asin(
+            sqrt(
+              pow(sin((lat2 - lat3) / 2), 2) +
+                  cos(lat2) * cos(lat3) * pow(sin((lon2 - lon3) / 2), 2),
+            ),
+          );
+      final c =
+          2 *
+          asin(
+            sqrt(
+              pow(sin((lat3 - lat1) / 2), 2) +
+                  cos(lat3) * cos(lat1) * pow(sin((lon3 - lon1) / 2), 2),
+            ),
+          );
+
       final s = (a + b + c) / 2;
-      final excess = 4 * atan(sqrt(tan(s/2) * tan((s - a)/2) * 
-          tan((s - b)/2) * tan((s - c)/2)));
-      
+      final excess =
+          4 *
+          atan(
+            sqrt(
+              tan(s / 2) *
+                  tan((s - a) / 2) *
+                  tan((s - b) / 2) *
+                  tan((s - c) / 2),
+            ),
+          );
+
       // Earth's radius in meters (mean radius)
       const double earthRadius = 6371000.0;
       area += excess * earthRadius * earthRadius;
     }
-    
+
     // Return absolute value of the area
     return area.abs();
   }
@@ -832,11 +868,11 @@ class EditFarmProvider with ChangeNotifier {
   }
 
   bool isLineSegmentIntersectingCircle(
-      LatLng p1,
-      LatLng p2,
-      LatLng center,
-      double radius,
-      ) {
+    LatLng p1,
+    LatLng p2,
+    LatLng center,
+    double radius,
+  ) {
     // Quick check: if either endpoint is inside circle, intersection exists
     double distP1 = gl.Geolocator.distanceBetween(
       p1.latitude,
@@ -863,12 +899,12 @@ class EditFarmProvider with ChangeNotifier {
     double a = dx * dx + dy * dy;
     double b =
         2 *
-            (dx * (p1.latitude - center.latitude) +
-                dy * (p1.longitude - center.longitude));
+        (dx * (p1.latitude - center.latitude) +
+            dy * (p1.longitude - center.longitude));
     double c =
         (p1.latitude - center.latitude) * (p1.latitude - center.latitude) +
-            (p1.longitude - center.longitude) * (p1.longitude - center.longitude) -
-            radius * radius;
+        (p1.longitude - center.longitude) * (p1.longitude - center.longitude) -
+        radius * radius;
 
     double discriminant = b * b - 4 * a * c;
 
@@ -927,7 +963,9 @@ class EditFarmProvider with ChangeNotifier {
                       Text(
                         'Farm size in hectares',
                         style: TextStyle(
-                          color: Theme.of(addFarmScreenContext).colorScheme.onSurface,
+                          color: Theme.of(
+                            addFarmScreenContext,
+                          ).colorScheme.onSurface,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -935,7 +973,9 @@ class EditFarmProvider with ChangeNotifier {
                       Text(
                         '${area.truncateToDecimalPlaces(6).toString()} ha',
                         style: TextStyle(
-                          color: Theme.of(addFarmScreenContext).colorScheme.onSurface,
+                          color: Theme.of(
+                            addFarmScreenContext,
+                          ).colorScheme.onSurface,
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),

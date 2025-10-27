@@ -322,9 +322,6 @@ class AddFarmerProvider extends ChangeNotifier {
 
       //get project from local db
       Project? project = await dbHelper.getProjectByCode(selectedProjectID!);
-      if (project == null) {
-        throw Exception('Project not found');
-      }
       // Get district name using district code
       final districtName = districts
           .firstWhere((district) => district.districtCode == selectedDistrictId)

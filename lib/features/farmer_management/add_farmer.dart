@@ -309,10 +309,6 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
 
     final isEnabled = farmProvider.selectedRegionId != null && farmProvider.districts.isNotEmpty;
 
-    // debugPrint("ALL DISTRICTS COUNT: ${farmProvider.districts.length}");
-    // debugPrint("FILTERED DISTRICTS COUNT: ${filteredDistricts.length}");
-    // debugPrint("SELECTED REGION ID (CODE): ${farmProvider.selectedRegionId}");
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

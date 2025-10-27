@@ -10,10 +10,16 @@ import '../../../widgets/date_field.dart';
 import 'edit_farm_provider.dart';
 
 class EditFarmScreen extends StatefulWidget {
-  const EditFarmScreen({super.key, required this.farm, required this.isSynced});
+  const EditFarmScreen({
+    super.key,
+    required this.farm,
+    required this.isSynced,
+    this.onFarmSaved,
+  });
 
   final Farm farm;
   final bool isSynced;
+  final VoidCallback? onFarmSaved;
 
   @override
   State<EditFarmScreen> createState() => _EditFarmScreenState();
@@ -644,8 +650,11 @@ class _EditFarmScreenState extends State<EditFarmScreen> {
             backgroundColor: Theme.of(
               context,
             ).colorScheme.secondary.withOpacity(0.3),
-            onTap: () async{
-              await farmProvider.saveFarm();
+            onTap: () async {
+              final success = await farmProvider.saveFarm();
+              if (success && widget.onFarmSaved != null) {
+                widget.onFarmSaved!();
+              }
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
