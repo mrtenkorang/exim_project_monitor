@@ -178,8 +178,13 @@ class _FarmList extends StatelessWidget {
     );
   }
 
+  Future<void> _refreshFarms(FarmHistoryProvider provider) async {
+    await provider.loadFarms();
+  }
+
   Widget _buildFarmCard(BuildContext context, Farm farm) {
     final theme = Theme.of(context);
+    final provider = Provider.of<FarmHistoryProvider>(context, listen: false);
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -231,9 +236,16 @@ class _FarmList extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EditFarmScreen(farm: farm, isSynced: isPending),
+                    builder: (context) => EditFarmScreen(
+                      farm: farm, 
+                      isSynced: isPending,
+                      onFarmSaved: () => _refreshFarms(provider),
+                    ),
                   ),
-                );
+                ).then((_) {
+                  // Refresh the list when returning from the edit screen
+                  _refreshFarms(provider);
+                });
               },
             ),
             IconButton(

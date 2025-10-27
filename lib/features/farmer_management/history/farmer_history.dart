@@ -168,6 +168,10 @@ class FarmerList extends StatelessWidget {
     );
   }
 
+  void _refreshFarmers(FarmerHistoryProvider provider) async {
+    await provider.loadFarmers();
+  }
+
   Widget _buildFarmerCard(BuildContext context, Farmer farmer) {
     debugPrint(farmer.toMap().toString());
     final theme = Theme.of(context);
@@ -229,9 +233,16 @@ class FarmerList extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => EditFarmerScreen(farmer: farmer, isSynced: farmer.isSynced==SyncStatus.synced),
+                        builder: (context) => EditFarmerScreen(
+                          farmer: farmer, 
+                          isSynced: farmer.isSynced == SyncStatus.synced,
+                          onFarmerSaved: () => _refreshFarmers(provider),
+                        ),
                       ),
-                    );
+                    ).then((_) {
+                      // Refresh the list when returning from the edit screen
+                      _refreshFarmers(provider);
+                    });
                   },
                 ),
                 IconButton(

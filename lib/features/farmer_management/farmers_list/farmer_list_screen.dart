@@ -1,4 +1,6 @@
+import 'package:exim_project_monitor/features/farmer_management/farmers_list/edit/edit_farmer_from_server.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'farmer_provider.dart';
 import 'farmer_detail_screen.dart';
@@ -18,7 +20,10 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final farmerProvider = Provider.of<FarmerListProvider>(context, listen: false);
+      final farmerProvider = Provider.of<FarmerListProvider>(
+        context,
+        listen: false,
+      );
       farmerProvider.loadFarmers();
     });
     _searchController.addListener(_onSearchChanged);
@@ -73,7 +78,10 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
               DropdownButtonFormField<String>(
                 value: provider.selectedRegion,
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('All Regions')),
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('All Regions'),
+                  ),
                   ...provider.availableRegions.map((region) {
                     return DropdownMenuItem(value: region, child: Text(region));
                   }),
@@ -93,12 +101,15 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
                   value: provider.selectedDistrict,
                   items: [
                     const DropdownMenuItem(
-                      value: null, 
-                      child: Text('All Districts', overflow: TextOverflow.ellipsis),
+                      value: null,
+                      child: Text(
+                        'All Districts',
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     ...provider.availableDistricts.map((district) {
                       return DropdownMenuItem(
-                        value: district, 
+                        value: district,
                         child: Text(
                           district,
                           overflow: TextOverflow.ellipsis,
@@ -154,22 +165,19 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
       appBar: AppBar(
         title: _isSearching
             ? TextField(
-          controller: _searchController,
-          decoration: const InputDecoration(
-            hintText: 'Search farmers...',
-            border: InputBorder.none,
-            hintStyle: TextStyle(color: Colors.white70),
-          ),
-          style: const TextStyle(color: Colors.white),
-          autofocus: true,
-        )
+                controller: _searchController,
+                decoration: const InputDecoration(
+                  hintText: 'Search farmers...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.white70),
+                ),
+                style: const TextStyle(color: Colors.white),
+                autofocus: true,
+              )
             : const Text('Farmers'),
         actions: [
           if (_isSearching)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: _clearSearch,
-            )
+            IconButton(icon: const Icon(Icons.clear), onPressed: _clearSearch)
           else
             IconButton(
               icon: const Icon(Icons.search),
@@ -187,7 +195,9 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
       ),
       body: Consumer<FarmerListProvider>(
         builder: (context, provider, _) {
-          final displayFarmers = _isSearching ? provider.searchResults : provider.filteredFarmers;
+          final displayFarmers = _isSearching
+              ? provider.searchResults
+              : provider.filteredFarmers;
 
           if (provider.isLoading && provider.farmers.isEmpty) {
             return const Center(child: CircularProgressIndicator());
@@ -242,7 +252,10 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
                         _isSearching
                             ? '${displayFarmers.length} results for "${_searchController.text}"'
                             : '${displayFarmers.length} farmers (filtered)',
-                        style: const TextStyle(fontSize: 14, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
                       ),
                       const Spacer(),
                       TextButton(
@@ -263,7 +276,7 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
               Expanded(
                 child: ListView.builder(
                   physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics()
+                    parent: AlwaysScrollableScrollPhysics(),
                   ),
                   itemCount: displayFarmers.length,
                   itemBuilder: (context, index) {
@@ -273,14 +286,21 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
                     }
                     final farmer = displayFarmers[index];
                     return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       child: ListTile(
-                        tileColor: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.1),
+                        tileColor: Theme.of(
+                          context,
+                        ).colorScheme.secondaryContainer.withOpacity(0.1),
                         contentPadding: const EdgeInsets.all(8),
                         leading: CircleAvatar(
                           backgroundColor: Theme.of(context).primaryColor,
                           child: Text(
-                            farmer.firstName.isNotEmpty ? farmer.firstName[0] : '?',
+                            farmer.firstName.isNotEmpty
+                                ? farmer.firstName[0]
+                                : '?',
                             style: const TextStyle(color: Colors.white),
                           ),
                         ),
@@ -306,33 +326,96 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
                             Row(
                               children: [
                                 Chip(
-                                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                                  side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withOpacity(0.2),
+                                  side: BorderSide(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    width: 1.5,
+                                  ),
                                   label: Text(
                                     '${farmer.farmsCount} Farms',
-                                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                      color: Theme.of(context).colorScheme.onPrimary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Chip(
-                                  side: BorderSide(color: Theme.of(context).colorScheme.secondary, width: 1.5),
-                                  backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                                  side: BorderSide(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.secondary,
+                                    width: 1.5,
+                                  ),
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.secondary.withOpacity(0.2),
                                   label: Text(
                                     farmer.farms.isNotEmpty
                                         ? '${totalArea.toStringAsFixed(2)} ha'
                                         : 'N/A',
-                                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                   ),
                                 ),
                               ],
                             ),
                           ],
+                        ),
+                        // edit button
+                        trailing: InkWell(
+                          onTap: () {
+                            debugPrint('Edit farmer: ${farmer.id}');
+                            Get.to(
+                              () => EditFarmerFromServerScreen(farmer: farmer),
+                              arguments: farmer,
+                            );
+                            // Navigator.push(
+                            //   context,
+                            //   MaterialPageRoute(
+                            //     builder: (context) => EditFarmerFromServerScreen(farmer: farmer),
+                            //   ),
+                            // );
+                          },
+                          child: Container(
+                            width: 80,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primaryContainer.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primaryContainer,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.edit,
+                              size: 20,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
                         ),
                         onTap: () {
                           Navigator.push(
