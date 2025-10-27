@@ -1,245 +1,191 @@
+import 'package:exim_project_monitor/widgets/common/section_header.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:exim_project_monitor/core/models/user_model.dart';
-import 'package:exim_project_monitor/core/providers/theme_provider.dart';
-
+import 'package:exim_project_monitor/core/widgets/info_card.dart';
+import 'package:exim_project_monitor/core/widgets/primary_button.dart';
 import '../../../core/cache_service/cache_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+
+  User? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final CacheService cacheService = await CacheService.getInstance();
+    final user = await cacheService.getUserInfo();
+    setState(() => _user = user);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    var user;
 
-    // If user is null, create a default user
-    user ??= User(
-      userID: 1,
-      firstName: 'test',
-      lastName: 'test',
-      userName: 'test',
-      staffId: 'test',
-      districtName: 'test',
-      districtCode: 'test',
-      districtId: 1,
-      regionName: 'test',
-      regionCode: 'test',
-    );
+
+
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text('My Profile'),
         centerTitle: true,
         elevation: 0,
+
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Profile Header
-            Center(
+      body: _user == null
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(10),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: colorScheme.primary.withOpacity(0.1),
-                      border: Border.all(color: colorScheme.primary, width: 2),
+                  // Profile Header
+                  Center(
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: colorScheme.primary.withOpacity(0.1),
+                            border: Border.all(
+                              color: colorScheme.primary,
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.person_rounded,
+                            size: 60,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '${_user!.firstName ?? ''} ${_user!.lastName ?? ''}'.trim(),
+                          style: textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        if (_user?.userName != null) ...[  
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_user!.userName}',
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    child: Icon(
-                      Icons.person,
-                      size: 60,
-                      color: colorScheme.primary,
-                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Personal Information Section
+                  const SectionHeader(
+                    title: 'Personal Information',
+                    // icon: Icons.person_outline,
+                  ),
+                  const SizedBox(height: 12),
+                  InfoCard(
+                    icon: Icons.badge_outlined,
+                    title: 'Staff ID',
+                    value: _user!.staffId ?? 'Not provided',
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Location Information
+                  const SectionHeader(
+                    title: 'Location',
+                    // icon: Icons.location_on_outlined,
+                  ),
+                  const SizedBox(height: 12),
+                  InfoCard(
+                    icon: Icons.place_outlined,
+                    title: 'Region',
+                    value: _user!.regionName ?? 'Not specified',
+                    // subtitle: _user!.regionCode != null ? 'Code: ${_user!.regionCode}' : null,
+                  ),
+                  const SizedBox(height: 8),
+                  InfoCard(
+                    icon: Icons.map_outlined,
+                    title: 'District',
+                    value: _user!.districtName ?? 'Not specified',
+                    // subtitle: _user!.districtCode != null ? 'Code: ${_user!.districtCode}' : null,
+                  ),
+                  const SizedBox(height: 24),
+
+
+                  // Logout Button
+                  PrimaryButton(
+                    onTap: () async {
+                      final shouldLogout = await showDialog<bool>(
+                        context: context,
+                        builder: (BuildContext context) => AlertDialog(
+                          title: const Text('Log Out'),
+                          content: const Text('Are you sure you want to log out?'),
+                          actions: <Widget>[
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text('Log Out'),
+                            ),
+                          ],
+                        ),
+                      ) ?? false;
+                      
+                      if (shouldLogout && context.mounted) {
+                        final cacheService = await CacheService.getInstance();
+                        await cacheService.logout(context);
+                      }
+                    },
+                    backgroundColor: colorScheme.errorContainer,
+                    child: const Text("Log out"),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    user.firstName ?? 'Guest User',
-                    style: textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+
+                  // App Version
+                  Center(
+                    child: Text(
+                      'v1.0.0',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
-                  ...{
-                    const SizedBox(height: 4),
-                    // Text(
-                    //   user.email,
-                    //   style: textTheme.bodyMedium?.copyWith(
-                    //     color: colorScheme.onSurfaceVariant,
-                    //   ),
-                    // ),
-                  },
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Account Section
-            _buildSectionHeader('Account', context),
-            _buildListTile(
-              context,
-              icon: Icons.person_outline,
-              title: 'Edit Profile',
-              onTap: () {
-                // TODO: Implement edit profile
-              },
-            ),
-            _buildListTile(
-              context,
-              icon: Icons.lock_outline,
-              title: 'Change Password',
-              onTap: () {
-                // TODO: Implement change password
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // Preferences Section
-            _buildSectionHeader('Preferences', context),
-            Consumer<ThemeProvider>(
-              builder: (context, themeProvider, _) {
-                return _buildListTile(
-                  context,
-                  icon: themeProvider.isDarkMode
-                      ? Icons.dark_mode
-                      : Icons.light_mode,
-                  title: 'Theme',
-                  trailing: Switch(
-                    value: themeProvider.isDarkMode,
-                    onChanged: (_) => themeProvider.toggleTheme(),
-                    activeColor: colorScheme.primary,
-                  ),
-                );
-              },
-            ),
-            _buildListTile(
-              context,
-              icon: Icons.notifications_none,
-              title: 'Notifications',
-              trailing: Switch(
-                value: true,
-                onChanged: (_) {},
-                activeColor: colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Support Section
-            _buildSectionHeader('Support', context),
-            _buildListTile(
-              context,
-              icon: Icons.help_outline,
-              title: 'Help & Support',
-              onTap: () {
-                // TODO: Implement help & support
-              },
-            ),
-            _buildListTile(
-              context,
-              icon: Icons.privacy_tip_outlined,
-              title: 'Privacy Policy',
-              onTap: () {
-                // TODO: Show privacy policy
-              },
-            ),
-            _buildListTile(
-              context,
-              icon: Icons.description_outlined,
-              title: 'Terms of Service',
-              onTap: () {
-                // TODO: Show terms of service
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: FilledButton.icon(
-                onPressed: ()  async {
-                  final CacheService cacheService = await CacheService.getInstance();
-                  await cacheService.logout(context);
-
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text('Logout'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.errorContainer,
-                  foregroundColor: colorScheme.onErrorContainer,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // App Version
-            Center(
-              child: Text(
-                'v1.0.0',
-                style: textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title, BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: Text(
-        title.toUpperCase(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.0,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildListTile(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    Widget? trailing,
-    VoidCallback? onTap,
-  }) {
-    final theme = Theme.of(context);
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4.0),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-
-      child: ListTile(
-        leading: Icon(icon, color: theme.colorScheme.primary),
-        title: Text(title, style: theme.textTheme.bodyLarge),
-        trailing: trailing ?? const Icon(Icons.chevron_right),
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+  // Helper method to format date if needed
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'N/A';
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

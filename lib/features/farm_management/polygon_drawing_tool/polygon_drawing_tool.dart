@@ -1034,7 +1034,7 @@ class _PolygonDrawingToolState extends State<PolygonDrawingTool>
                                                     currentPosition!.accuracy
                                                         .toString(),
                                                   ) <
-                                                  3) {
+                                                  30) {
                                                 if (isLocationInsidePolygon(
                                                   LatLng(
                                                     currentPosition.latitude!,
