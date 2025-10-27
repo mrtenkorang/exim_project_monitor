@@ -65,6 +65,7 @@ class _HomeState extends State<Home> {
 
     return SafeArea(
       child: Scaffold(
+        drawer: _buildDrawer(context),
         body: LayoutBuilder(
           builder: (context, constraints) {
             final screenWidth = constraints.maxWidth;
@@ -76,7 +77,8 @@ class _HomeState extends State<Home> {
               slivers: [
                 // App Bar Section
                 SliverAppBar(
-                  leading: Container(),
+                  automaticallyImplyLeading: false,
+
                   expandedHeight: isSmallScreen ? 100 : 120,
                   flexibleSpace: FlexibleSpaceBar(
                     background: Container(
@@ -92,25 +94,35 @@ class _HomeState extends State<Home> {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Profile Icon
-                              Container(
-                                width: isSmallScreen ? 50 : 60,
-                                height: isSmallScreen ? 50 : 60,
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primaryContainer,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: theme.colorScheme.outline.withOpacity(0.3),
-                                    width: 1,
+                              Builder(
+                                builder: (context) => IconButton(
+                                  icon: Icon(
+                                    Icons.menu,
+                                    color: theme.colorScheme.surface,
                                   ),
-                                ),
-                                child: Icon(
-                                  Icons.person_rounded,
-                                  color: theme.colorScheme.onPrimaryContainer,
-                                  size: isSmallScreen ? 20 : 24,
+                                  onPressed: () => Scaffold.of(context).openDrawer(),
                                 ),
                               ),
+                              // Profile Icon
+                              // Container(
+                              //   width: isSmallScreen ? 50 : 60,
+                              //   height: isSmallScreen ? 50 : 60,
+                              //   padding: const EdgeInsets.all(8),
+                              //   decoration: BoxDecoration(
+                              //     color: theme.colorScheme.primaryContainer,
+                              //     shape: BoxShape.circle,
+                              //     border: Border.all(
+                              //       color: theme.colorScheme.outline.withOpacity(0.3),
+                              //       width: 1,
+                              //     ),
+                              //   ),
+                              //   child: Icon(
+                              //     Icons.person_rounded,
+                              //     color: theme.colorScheme.onPrimaryContainer,
+                              //     size: isSmallScreen ? 20 : 24,
+                              //   ),
+                              // ),
+
                               SizedBox(width: isSmallScreen ? 8 : 12),
                               // User Info
                               Expanded(
@@ -346,6 +358,221 @@ class _HomeState extends State<Home> {
         ),
       ),
     );
+  }
+
+  // Build the side drawer
+  Widget _buildDrawer(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Drawer(
+      child: Column(
+        children: [
+          // Drawer Header
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: theme.primaryColor,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 60,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.person_rounded,
+                    color: theme.colorScheme.onPrimaryContainer,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  userInfo?.firstName?.isNotEmpty == true && userInfo?.lastName?.isNotEmpty == true
+                      ? "${userInfo?.firstName} ${userInfo?.lastName}"
+                      : "${userInfo?.userName}",
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: theme.colorScheme.surface,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "${userInfo?.districtName}",
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.surface.withOpacity(0.8),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+              ],
+            ),
+          ),
+
+          // Drawer Menu Items
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.person,
+                  title: "Profile",
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ProfileScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.sync,
+                  title: "Sync Data",
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SyncPage(),
+                      ),
+                    );
+                  },
+                ),
+
+                // Divider
+
+
+                // Divider before logout
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Divider(),
+                ),
+
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.logout,
+                  title: "Logout",
+                  isLogout: true,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showLogoutConfirmation(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build individual drawer menu item
+  Widget _buildDrawerItem(
+      BuildContext context, {
+        required IconData icon,
+        required String title,
+        required VoidCallback onTap,
+        bool isLogout = false,
+      }) {
+    final theme = Theme.of(context);
+
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isLogout ? Colors.red : theme.primaryColor,
+      ),
+      title: Text(
+        title,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: isLogout ? Colors.red : null,
+          fontWeight: isLogout ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+      trailing: isLogout ? null : Icon(
+        Icons.chevron_right,
+        color: theme.primaryColor.withOpacity(0.5),
+      ),
+      onTap: onTap,
+    );
+  }
+
+  // Show logout confirmation dialog
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Logout"),
+          content: const Text("Are you sure you want to logout?"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _performLogout(context);
+              },
+              child: const Text(
+                "Logout",
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Perform logout operation
+  void _performLogout(BuildContext context) async {
+    try {
+      // Show loading
+      Globals().startWait(context);
+
+      final cacheService = await CacheService.getInstance();
+      await cacheService.logout(context);
+
+      await Future.delayed(const Duration(seconds: 1));
+
+      Globals().endWait(context);
+
+      CustomSnackbar.show(
+        context,
+        message: "Logged out successfully",
+        type: SnackbarType.success,
+      );
+
+      // Example: Navigate to login screen
+      // Navigator.pushAndRemoveUntil(
+      //   context,
+      //   MaterialPageRoute(builder: (context) => LoginScreen()),
+      //   (route) => false,
+      // );
+
+    } catch (e) {
+      Globals().endWait(context);
+      CustomSnackbar.show(
+        context,
+        message: "Logout failed: $e",
+        type: SnackbarType.error,
+      );
+    }
   }
 
   void _handleResult(dynamic result) {

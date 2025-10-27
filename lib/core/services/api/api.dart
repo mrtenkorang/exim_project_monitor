@@ -51,90 +51,90 @@ class APIService {
     // Extract error message from response
     final serverMessage =
         errorResponse?['message'] ??
-        errorResponse?['error'] ??
-        errorResponse?['detail'];
+            errorResponse?['error'] ??
+            errorResponse?['detail'];
 
     switch (statusCode) {
       case 400:
         errorMessage =
             serverMessage ??
-            'Bad Request: The server could not understand the request due to invalid syntax.';
+                'The data seems to be in the system already';
         throw BadRequestException(errorMessage);
       case 401:
         errorMessage =
             serverMessage ??
-            'Unauthorized: Authentication is required and has failed or not been provided.';
+                'Unauthorized: Authentication is required and has failed or not been provided.';
         throw UnauthorizedException(errorMessage);
       case 403:
         errorMessage =
             serverMessage ??
-            'Forbidden: You do not have permission to access this resource.';
+                'Forbidden: You do not have permission to access this resource.';
         throw ForbiddenException(errorMessage);
       case 404:
         errorMessage =
             serverMessage ??
-            'Not Found: The requested resource could not be found on the server.';
+                'Not Found: The requested resource could not be found on the server.';
         throw NotFoundException(errorMessage);
       case 405:
         errorMessage =
             serverMessage ??
-            'Method Not Allowed: The request method is not supported for the requested resource.';
+                'Method Not Allowed: The request method is not supported for the requested resource.';
         throw MethodNotAllowedException(errorMessage);
       case 408:
         errorMessage =
             serverMessage ??
-            'Request Timeout: The server timed out waiting for the request.';
+                'Request Timeout: The server timed out waiting for the request.';
         throw RequestTimeoutException(errorMessage);
       case 409:
         errorMessage =
             serverMessage ??
-            'Conflict: The request could not be completed due to a conflict with the current state of the resource.';
+                'Conflict: The request could not be completed due to a conflict with the current state of the resource.';
         throw ConflictException(errorMessage);
       case 422:
         errorMessage =
             serverMessage ??
-            'Unprocessable Entity: The request was well-formed but unable to be followed due to semantic errors.';
+                'Unprocessable Entity: The request was well-formed but unable to be followed due to semantic errors.';
         throw UnprocessableEntityException(errorMessage);
       case 429:
         errorMessage =
             serverMessage ??
-            'Too Many Requests: You have sent too many requests in a given amount of time.';
+                'Too Many Requests: You have sent too many requests in a given amount of time.';
         throw RateLimitException(errorMessage);
       case 500:
         errorMessage =
             serverMessage ??
-            'Internal Server Error: The server encountered an unexpected condition.';
+                'Internal Server Error: The server encountered an unexpected condition.';
         throw ServerException(errorMessage);
       case 502:
         errorMessage =
             serverMessage ??
-            'Bad Gateway: The server received an invalid response from the upstream server.';
+                'Bad Gateway: The server received an invalid response from the upstream server.';
         throw BadGatewayException(errorMessage);
       case 503:
         errorMessage =
             serverMessage ??
-            'Service Unavailable: The server is currently unavailable (overloaded or down for maintenance).';
+                'Service Unavailable: The server is currently unavailable (overloaded or down for maintenance).';
         throw ServiceUnavailableException(errorMessage);
       case 504:
         errorMessage =
             serverMessage ??
-            'Gateway Timeout: The server did not receive a timely response from the upstream server.';
+                'Gateway Timeout: The server did not receive a timely response from the upstream server.';
         throw GatewayTimeoutException(errorMessage);
       default:
         if (statusCode >= 400 && statusCode < 500) {
           errorMessage =
               serverMessage ??
-              'Client Error: An error occurred on the client side (Status code: $statusCode).';
+                  'Client Error: An error occurred on the client side (Status code: $statusCode).';
           throw ClientException(errorMessage, statusCode);
         } else if (statusCode >= 500) {
           errorMessage =
               serverMessage ??
-              'Server Error: An error occurred on the server side (Status code: $statusCode).';
+                  'Server Error: An error occurred on the server side (Status code: $statusCode).';
           throw ServerException(errorMessage);
         } else {
           errorMessage =
               serverMessage ??
-              'Unexpected error occurred (Status code: $statusCode).';
+                  'Unexpected error occurred (Status code: $statusCode).';
           throw ApiException(errorMessage, statusCode);
         }
     }
@@ -142,11 +142,11 @@ class APIService {
 
   /// Generic method for handling API requests
   Future<Map<String, dynamic>> _makeRequest(
-    String method,
-    Uri url, {
-    Map<String, dynamic>? body,
-    Map<String, String>? additionalHeaders,
-  }) async {
+      String method,
+      Uri url, {
+        Map<String, dynamic>? body,
+        Map<String, String>? additionalHeaders,
+      }) async {
     try {
       final headers = {..._headers, ...?additionalHeaders};
 
@@ -255,6 +255,20 @@ class APIService {
         .toList();
   }
 
+  /// Updates a farmer on the server
+  /// Returns the updated farmer data
+  Future<Farmer> updateFarmer(Farmer farmer) async {
+    final responseData = await _makeRequest(
+      'PUT',
+      Uri.parse('${URL.farmers}${farmer.id}'),
+      body: farmer.toJsonOnline(),
+    );
+
+    debugPrint("FARMER DATTTAAAAA :::::::::::: $responseData");
+
+    return Farmer.fromMapOnline(responseData['data']);
+  }
+
   /// Fetches a single farmer by ID
   Future<Farmer> getFarmerById(String id) async {
     final responseData = await _makeRequest(
@@ -330,7 +344,7 @@ class APIService {
 
       final farmers = <FarmerFromServerModel>[];
       final allFarms = <FarmFromServer>[];
-      final allSecondaryCrops = <String>{}.toList(); // Use Set to avoid duplicates
+      final allSecondaryCrops = <String>{}.toList();
 
       for (final farmerJson in data) {
         try {
@@ -415,7 +429,7 @@ class APIService {
 
     try {
       debugPrint("Checking app version with data: $data");
-      
+
       final response = await _makeRequest(
         'POST',
         Uri.parse(URL.checkAppVersion),
@@ -426,7 +440,7 @@ class APIService {
       );
 
       debugPrint("Version check response: $response");
-      
+
       // Return the response with success status
       return {
         'success': true,
