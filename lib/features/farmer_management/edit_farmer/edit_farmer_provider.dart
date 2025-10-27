@@ -1,6 +1,7 @@
 import 'dart:io' as io;
 import 'package:exim_project_monitor/core/models/projects_model.dart';
 import 'package:exim_project_monitor/core/services/api/api.dart';
+import 'package:exim_project_monitor/features/screen_wrapper/screen_wrapper.dart';
 import 'package:exim_project_monitor/widgets/globals/globals.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -16,7 +17,6 @@ import '../../../widgets/custom_snackbar.dart';
 import '../../farm_management/polygon_drawing_tool/utils/bytes_to_size.dart';
 
 class EditFarmerProvider extends ChangeNotifier {
-
   // Form controllers
   final projectIdController = TextEditingController();
   final farmerNameController = TextEditingController();
@@ -30,14 +30,14 @@ class EditFarmerProvider extends ChangeNotifier {
   final farmerDOBController = TextEditingController();
   final farmerPhoneNumber = TextEditingController();
 
-
   final TextEditingController cropTypeController = TextEditingController();
   final TextEditingController varietyBreedController = TextEditingController();
-  final TextEditingController plantingDensityController = TextEditingController();
+  final TextEditingController plantingDensityController =
+      TextEditingController();
   final TextEditingController laborHiredController = TextEditingController();
-  final TextEditingController estimatedYieldController = TextEditingController();
+  final TextEditingController estimatedYieldController =
+      TextEditingController();
   final TextEditingController yieldInPrevSeason = TextEditingController();
-
 
   // Selected values
   String? _selectedRegionId;
@@ -48,14 +48,11 @@ class EditFarmerProvider extends ChangeNotifier {
   String? _selectedGender;
   String? get selectedGender => _selectedGender;
 
-
   List<String> genders = ["Male", "Female"];
-
 
   // Getters
   String? get selectedRegionId => _selectedRegionId;
   String? get selectedDistrictId => _selectedDistrictId;
-
 
   void setSelectedGender(String? val) {
     _selectedGender = val;
@@ -74,7 +71,6 @@ class EditFarmerProvider extends ChangeNotifier {
     _selectedDistrictId = districtId;
     notifyListeners();
   }
-
 
   // State
 
@@ -100,7 +96,6 @@ class EditFarmerProvider extends ChangeNotifier {
   DateTime? get plantingDate => _plantingDate;
   DateTime? get harvestDate => _harvestDate;
   DateTime? get farmerDOB => _farmerDOB;
-
 
   List<Region> regions = [];
 
@@ -164,7 +159,8 @@ class EditFarmerProvider extends ChangeNotifier {
   void setFarmerDOB(DateTime? date) {
     _farmerDOB = date;
     if (date != null) {
-      farmerDOBController.text = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+      farmerDOBController.text =
+          "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
     } else {
       farmerDOBController.clear();
     }
@@ -181,7 +177,7 @@ class EditFarmerProvider extends ChangeNotifier {
       return null;
     }
   }
-  
+
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
@@ -189,7 +185,7 @@ class EditFarmerProvider extends ChangeNotifier {
   Future<void> initializeFromFarmerData(Farmer farmer) async {
     try {
       _farmerId = farmer.id;
-      
+
       // Set basic information
       farmerNameController.text = farmer.name;
       phoneNumberController.text = farmer.phoneNumber;
@@ -200,7 +196,7 @@ class EditFarmerProvider extends ChangeNotifier {
 
       setSelectedProject(farmer.projectId);
       setSelectedGender(farmer.gender);
-      
+
       // Handle date of birth
       _farmerDOB = _parseDate(farmer.dateOfBirth);
       if (_farmerDOB != null) {
@@ -208,12 +204,14 @@ class EditFarmerProvider extends ChangeNotifier {
       } else {
         farmerDOBController.text = farmer.dateOfBirth;
       }
-      
+
       // Set location information
       communityController.text = farmer.community;
-      
-      debugPrint('Initializing with region: ${farmer.regionName}, district: ${farmer.districtName}');
-      
+
+      debugPrint(
+        'Initializing with region: ${farmer.regionName}, district: ${farmer.districtName}',
+      );
+
       // Ensure regions and districts are loaded first
       await fetchRegions();
       await fetchDistricts();
@@ -221,61 +219,100 @@ class EditFarmerProvider extends ChangeNotifier {
 
       debugPrint('Total regions loaded: ${regions.length}');
       debugPrint('Total districts loaded: ${districts.length}');
-      
+
       // Set region and district
       if (farmer.regionName.isNotEmpty) {
         debugPrint('Looking for region: ${farmer.regionName}');
-        
+
         // First try to find the region by name or code
         var region = regions.firstWhere(
-          (r) => r.region.toLowerCase() == farmer.regionName.toLowerCase() || 
-                 r.regCode.toLowerCase() == farmer.regionName.toLowerCase(),
-          orElse: () => Region(id: 0, region: '', regCode: '', createdAt: '', updatedAt: ''),
+          (r) =>
+              r.region.toLowerCase() == farmer.regionName.toLowerCase() ||
+              r.regCode.toLowerCase() == farmer.regionName.toLowerCase(),
+          orElse: () => Region(
+            id: 0,
+            region: '',
+            regCode: '',
+            createdAt: '',
+            updatedAt: '',
+          ),
         );
-        
+
         if (region.region.isNotEmpty) {
           debugPrint('Found region: ${region.region} (${region.regCode})');
           _selectedRegionId = region.regCode;
           _selectedRegionCode = region.regCode;
           regionController.text = region.region;
-          
+
           // Now set the district after region is set
           if (farmer.districtName.isNotEmpty) {
-            debugPrint('Looking for district: ${farmer.districtName} in region: ${region.regCode}');
-            
+            debugPrint(
+              'Looking for district: ${farmer.districtName} in region: ${region.regCode}',
+            );
+
             // Find the district by name within the selected region (case insensitive)
             final district = districts.firstWhere(
-              (d) => (d.district.toLowerCase() == farmer.districtName.toLowerCase() ||
-                     (d.districtCode.toLowerCase()) == farmer.districtName.toLowerCase()) &&
-                    d.regCode == _selectedRegionId,
-              orElse: () => District(id: 0, district: '', districtCode: '', regCode: '', region: '', createdAt: DateTime.now(), updatedAt: DateTime.now()),
+              (d) =>
+                  (d.district.toLowerCase() ==
+                          farmer.districtName.toLowerCase() ||
+                      (d.districtCode.toLowerCase()) ==
+                          farmer.districtName.toLowerCase()) &&
+                  d.regCode == _selectedRegionId,
+              orElse: () => District(
+                id: 0,
+                district: '',
+                districtCode: '',
+                regCode: '',
+                region: '',
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              ),
             );
-            
+
             if (district.district.isNotEmpty) {
               _selectedDistrictId = district.id.toString();
               districtController.text = district.district;
-              debugPrint('✓ District set to: ${district.district} (ID: ${district.id})');
+              debugPrint(
+                '✓ District set to: ${district.district} (ID: ${district.id})',
+              );
             } else {
-              debugPrint('✗ District not found: ${farmer.districtName} for region: ${region.region}');
+              debugPrint(
+                '✗ District not found: ${farmer.districtName} for region: ${region.region}',
+              );
               // Try to find any district that matches the name regardless of region
               final anyDistrict = districts.firstWhere(
-                (d) => d.district.toLowerCase() == farmer.districtName.toLowerCase() ||
-                       (d.districtCode.toLowerCase() ?? '') == farmer.districtName.toLowerCase(),
-                orElse: () => District(id: 0, district: '', districtCode: '', regCode: '', region: '', createdAt: DateTime.now(), updatedAt: DateTime.now()),
+                (d) =>
+                    d.district.toLowerCase() ==
+                        farmer.districtName.toLowerCase() ||
+                    (d.districtCode.toLowerCase() ?? '') ==
+                        farmer.districtName.toLowerCase(),
+                orElse: () => District(
+                  id: 0,
+                  district: '',
+                  districtCode: '',
+                  regCode: '',
+                  region: '',
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                ),
               );
-              
+
               if (anyDistrict.district.isNotEmpty) {
-                debugPrint('Found district in different region: ${anyDistrict.district} (Region: ${anyDistrict.regCode})');
+                debugPrint(
+                  'Found district in different region: ${anyDistrict.district} (Region: ${anyDistrict.regCode})',
+                );
                 districtController.text = anyDistrict.district;
               }
             }
           }
         } else {
           debugPrint('✗ Region not found: ${farmer.regionName}');
-          debugPrint('Available regions: ${regions.map((r) => '${r.region} (${r.regCode})').toList()}');
+          debugPrint(
+            'Available regions: ${regions.map((r) => '${r.region} (${r.regCode})').toList()}',
+          );
         }
       }
-      
+
       // Set project ID if available
       if (farmer.projectId.isNotEmpty) {
         if (projectIDs.contains(farmer.projectId)) {
@@ -308,14 +345,12 @@ class EditFarmerProvider extends ChangeNotifier {
       //     }
       //   }
 
-      
       notifyListeners();
     } catch (e) {
       debugPrint('Error initializing farmer data: $e');
       rethrow;
     }
   }
-
 
   String? get selectedProjectID => _selectedProjectID;
 
@@ -388,7 +423,6 @@ class EditFarmerProvider extends ChangeNotifier {
   DatabaseHelper dbHelper = DatabaseHelper();
 
   saveFarmerOffline(BuildContext context) async {
-
     debugPrint("Started save offline");
     try {
       Farmer farmer = Farmer(
@@ -425,8 +459,8 @@ class EditFarmerProvider extends ChangeNotifier {
       debugPrint("Result: $result");
 
       if (result >= 0) {
-        Navigator.of(context).pop();
-        Navigator.of(context).pop();
+        Navigator.pop(context);
+        Navigator.pop(context);
         CustomSnackbar.show(
           context,
           message: 'Farmer added successfully!',
@@ -444,29 +478,28 @@ class EditFarmerProvider extends ChangeNotifier {
         message: 'Error adding farmer: $e',
         type: SnackbarType.error,
       );
-
     }
-
   }
-
 
   submitFarmer(BuildContext context) async {
     try {
-
       //get project from local db
       Project? project = await dbHelper.getProjectByCode(selectedProjectID!);
       // Get district name using district code
       String districtName;
       try {
-        districtName = districts.firstWhere(
-          (district) => district.districtCode == selectedDistrictId,
-        ).district;
+        districtName = districts
+            .firstWhere(
+              (district) => district.districtCode == selectedDistrictId,
+            )
+            .district;
       } catch (e) {
         debugPrint('Error finding district: $e');
         // Provide a default value or handle the error as needed
-        districtName = districts.isNotEmpty ? districts.first.district : 'Unknown District';
+        districtName = districts.isNotEmpty
+            ? districts.first.district
+            : 'Unknown District';
       }
-
 
       // Convert image to base64 if available
       String? photoBase64;
@@ -514,48 +547,48 @@ class EditFarmerProvider extends ChangeNotifier {
 
       /// SHow loading indicator
       Globals().startWait(context);
-      await apiService.submitFarmer(farmer).then((response) async {
-        // Update the farmer's sync status to synced
-        final updatedFarmer = farmer.copyWith(
-          isSynced: SyncStatus.synced,
+      await apiService
+          .submitFarmer(farmer)
+          .then((response) async {
+            // Update the farmer's sync status to synced
+            final updatedFarmer = farmer.copyWith(isSynced: SyncStatus.synced);
 
-        );
+            // Update the farmer in the local database
+            await dbHelper.updateFarmer(updatedFarmer);
 
-        // Update the farmer in the local database
-        await dbHelper.updateFarmer(updatedFarmer);
-        
-        _isLoading = false;
-        notifyListeners();
+            _isLoading = false;
+            notifyListeners();
 
-        if (context.mounted) {
-          Navigator.pop(context);
-          Navigator.pop(context);
-          CustomSnackbar.show(
-            context,
-            message: 'Farmer submitted successfully!',
-            type: SnackbarType.success,
-          );
-          clearForm();
-        }
-      }).catchError((error, stackTrace) async {
-        /// remove loading indicator
-        Globals().endWait(context);
-        // On error, update the sync status to failed
-        // final failedFarmer = farmer.copyWith(
-        //   isSynced: SyncStatus.failed,
-        //   syncError: error.toString(),
-        // );
-        // await dbHelper.updateFarmer(failedFarmer);
-        _isLoading = false;
-        notifyListeners();
-        debugPrint('Error adding farmer via API: $error');
-        debugPrint('Error adding farmer via API: $stackTrace');
-        CustomSnackbar.show(
-          context,
-          message: 'Error adding farmer: $error',
-          type: SnackbarType.error,
-        );
-      });
+            if (context.mounted) {
+              Navigator.pop(context);
+              Navigator.pop(context);
+              CustomSnackbar.show(
+                context,
+                message: 'Farmer submitted successfully!',
+                type: SnackbarType.success,
+              );
+              clearForm();
+            }
+          })
+          .catchError((error, stackTrace) async {
+            /// remove loading indicator
+            Globals().endWait(context);
+            // On error, update the sync status to failed
+            // final failedFarmer = farmer.copyWith(
+            //   isSynced: SyncStatus.failed,
+            //   syncError: error.toString(),
+            // );
+            // await dbHelper.updateFarmer(failedFarmer);
+            _isLoading = false;
+            notifyListeners();
+            debugPrint('Error adding farmer via API: $error');
+            debugPrint('Error adding farmer via API: $stackTrace');
+            CustomSnackbar.show(
+              context,
+              message: 'Error adding farmer: $error',
+              type: SnackbarType.error,
+            );
+          });
 
       /// remove loading indicator
       Globals().endWait(context);
@@ -565,7 +598,6 @@ class EditFarmerProvider extends ChangeNotifier {
       //
       // _isLoading = true;
       // notifyListeners();
-
     } catch (e, stackTrace) {
       _isLoading = false;
       notifyListeners();

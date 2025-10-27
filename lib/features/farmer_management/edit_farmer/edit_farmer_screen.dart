@@ -12,10 +12,12 @@ class EditFarmerScreen extends StatefulWidget {
     super.key,
     required this.farmer,
     required this.isSynced,
+    this.onFarmerSaved,
   });
 
   final Farmer farmer;
   final bool isSynced;
+  final VoidCallback? onFarmerSaved;
 
   @override
   State<EditFarmerScreen> createState() => _EditFarmerScreenState();
@@ -145,7 +147,7 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
                     //   },
                     // ),
                     if (widget.isSynced) const SizedBox(height: 20),
-                    if (!widget.isSynced) _buildActionButtons(farmerProvider),
+                    if (!widget.isSynced) _buildActionButtons(farmerProvider, widget.onFarmerSaved),
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -402,7 +404,7 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
     );
   }
 
-  Widget _buildActionButtons(EditFarmerProvider farmProvider) {
+  Widget _buildActionButtons(EditFarmerProvider farmProvider, VoidCallback? onFarmerSaved) {
     return Row(
       children: [
         Expanded(
@@ -411,8 +413,11 @@ class _EditFarmerScreenState extends State<EditFarmerScreen> {
             backgroundColor: Theme.of(
               context,
             ).colorScheme.secondary.withOpacity(0.3),
-            onTap: () {
-              farmProvider.saveFarmerOffline(context);
+            onTap: () async {
+              await farmProvider.saveFarmerOffline(context);
+              if (onFarmerSaved != null) {
+                onFarmerSaved!();
+              }
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
