@@ -1,4 +1,6 @@
+import 'package:exim_project_monitor/core/models/district_model.dart';
 import 'package:exim_project_monitor/core/models/farmer_model.dart';
+import 'package:exim_project_monitor/core/services/database/database_helper.dart';
 import 'package:exim_project_monitor/widgets/globals/globals.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -8,6 +10,7 @@ import '../../../../../core/services/api/api.dart';
 
 class EditFarmerFromServerController extends GetxController {
   final APIService _apiService = APIService();
+  final DatabaseHelper _databaseHelper = DatabaseHelper();
   final formKey = GlobalKey<FormState>();
   BuildContext? editFarmerFromServerScreenContext;
 
@@ -38,7 +41,6 @@ class EditFarmerFromServerController extends GetxController {
   var selectedVariety = ''.obs;
 
   var selectedSecondaryCrops = <String>[].obs;
-
   var extensionServices = false.obs;
 
   var dateOfBirth = ''.obs;
@@ -50,10 +52,22 @@ class EditFarmerFromServerController extends GetxController {
   var estimatedYield = 0.0.obs;
   var yieldInPreSeason = 0.0.obs;
 
+  final districts = <District>[].obs;
+
   @override
   void onInit() {
     super.onInit();
     _initializeFormWithFarmerData();
+    fetchDistricts();
+  }
+
+  Future<void> fetchDistricts() async {
+    try {
+      final districtsList = await _databaseHelper.getAllDistricts();
+      districts.assignAll(districtsList);
+    } catch (e) {
+      debugPrint('Error fetching districts: $e');
+    }
   }
 
   void _initializeFormWithFarmerData() {
@@ -74,6 +88,8 @@ class EditFarmerFromServerController extends GetxController {
     selectedVariety.value = farmer.variety;
     selectedSecondaryCrops.value = List<String>.from(farmer.secondaryCrops);
     extensionServices.value = farmer.extensionServices;
+    selectedRegion.value = farmer.regionName;
+    selectedDistrict.value = farmer.districtName;
 
     dateOfBirth.value = farmer.dateOfBirth;
     plantingDate.value = farmer.plantingDate;
@@ -95,8 +111,7 @@ class EditFarmerFromServerController extends GetxController {
       final updatedFarmer = Farmer(
           id: farmer.id,
           projectId: "",
-          name:
-          "${firstNameController.text.trim()} ${lastNameController.text.trim()}",
+          name: "${firstNameController.text.trim()} ${lastNameController.text.trim()}",
           idNumber: nationalIdController.text.trim(),
           phoneNumber: phoneNumberController.text.trim(),
           gender: selectedGender.value,
@@ -109,17 +124,24 @@ class EditFarmerFromServerController extends GetxController {
       );
 
       final Map<String, dynamic> farmerMap = updatedFarmer.toJsonOnline();
+      debugPrint("THE FARMER DATA ::::::::: $farmerMap");
 
-      print("THE FARMER DATA ::::::::: $farmerMap");
+      Globals().startWait(editFarmerFromServerScreenContext!);
+      Farmer farmerResponse = await _apiService.updateFarmer(updatedFarmer);
+      Globals().endWait(editFarmerFromServerScreenContext!);
 
-      // Globals().startWait(editFarmerFromServerScreenContext!);
-      // Farmer farmerr = await _apiService.updateFarmer(updatedFarmer);
-      // Globals().endWait(editFarmerFromServerScreenContext);
-
-
-
-      // successMessage.value = 'Farmer updated successfully';
-      return true;
+      if (farmerResponse.id.toString().isNotEmpty) {
+        Get.back();
+        Get.back();
+        Globals().showSnackBar(
+          title: 'Success',
+          message: 'Farmer updated successfully',
+          backgroundColor: Colors.green,
+        );
+        successMessage.value = 'Farmer updated successfully';
+        return true;
+      }
+      return false;
     } catch (e) {
       errorMessage.value = 'Failed to update farmer: ${e.toString()}';
       return false;

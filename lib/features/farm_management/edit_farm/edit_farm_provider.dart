@@ -937,6 +937,7 @@ class EditFarmProvider with ChangeNotifier {
           layers: polys,
           initialPolygon: polygon,
           viewInitialPolygon: polygon != null,
+          initialMarkers: markers,
           useBackgroundLayers: false,
           allowTappingInputMethod: false,
           allowTracingInputMethod: false,
