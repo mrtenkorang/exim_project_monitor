@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/widgets/custom_text_field.dart';
 import '../../core/widgets/primary_button.dart';
@@ -42,11 +43,66 @@ class _AddFarmerScreenState extends State<AddFarmerScreen> {
                     "Farmer name",
                     farmerProvider.farmerNameController,
                   ),
-                  _buildTitleAndField(
-                    "Farmer Id / Ghana card number",
-                    farmerProvider.farmerIdNumberController,
-                    keyboardType: TextInputType.number,
+
+                  TextFormField(
+                    controller: farmerProvider.farmerIdNumberController,
+                    decoration: const InputDecoration(
+                      labelText: 'National ID (GHA-XXXXXXXXX-X)',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      // prefixText: 'GHA-',
+                      counterText: '',
+                    ),
+                    // keyboardType: TextInputType.number,
+                    maxLength: 15,
+                    buildCounter: (BuildContext context, {int? currentLength, int? maxLength, bool? isFocused}) => null,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      TextInputFormatter.withFunction((oldValue, newValue) {
+                        if (newValue.text.isEmpty) {
+                          return const TextEditingValue(
+                            text: 'GHA-',
+                            selection: TextSelection.collapsed(offset: 4),
+                          );
+                        }
+
+                        String newText = newValue.text;
+
+                        // Add GHA- prefix if not present
+                        if (!newText.startsWith('GHA-')) {
+                          newText = 'GHA-$newText';
+                        }
+
+                        // Add hyphen after 13 characters if not present
+                        if (newText.length == 14 && !newText.endsWith('-')) {
+                          newText = '${newText.substring(0, 13)}-${newText.substring(13)}';
+                        }
+
+                        // Limit to 15 characters (GHA-123456789-1)
+                        if (newText.length > 15) {
+                          newText = newText.substring(0, 15);
+                        }
+
+                        return TextEditingValue(
+                          text: newText,
+                          selection: TextSelection.collapsed(offset: newText.length),
+                        );
+                      }),
+                    ],
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return null;
+                      final regex = RegExp(r'^GHA-\d{9}-\d$');
+                      if (!regex.hasMatch(value)) {
+                        return 'Please enter a valid National ID (GHA-123456789-1)';
+                      }
+                      return null;
+                    },
                   ),
+                  // _buildTitleAndField(
+                  //   "Farmer Id / Ghana card number",
+                  //   farmerProvider.farmerIdNumberController,
+                  //   keyboardType: TextInputType.number,
+                  // ),
                   _buildGenderDropdown(farmerProvider),
                   // _buildTitleAndField(
                   //   "Gender",

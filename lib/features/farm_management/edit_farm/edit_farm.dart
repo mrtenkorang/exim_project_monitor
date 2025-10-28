@@ -337,7 +337,7 @@ class _EditFarmScreenState extends State<EditFarmScreen> {
           Icon(Icons.map, color: Theme.of(context).colorScheme.onSurface),
           const SizedBox(width: 10),
           Text(
-            "Map farm",
+            "Edit Farm Polygon",
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurface,
             ),

@@ -39,6 +39,10 @@ class APIService {
 
     try {
       errorResponse = jsonDecode(response.body);
+
+      debugPrint("ERROR RESPONSE ::::::::: $errorResponse");
+      debugPrint("ERROR RESPONSE ::::::::: ${response.statusCode}");
+
     } catch (e) {
       // If response body is not valid JSON, use the raw body
       errorResponse = {
@@ -157,6 +161,16 @@ class APIService {
           headers: headers,
           body: body != null ? jsonEncode(body) : null,
         ),
+        'PUT' => _client.put(
+          url,
+          headers: headers,
+          body: body != null ? jsonEncode(body) : null,
+        ),
+        'DELETE' => _client.delete(
+          url,
+          headers: headers,
+          body: body != null ? jsonEncode(body) : null,
+        ),
         _ => throw UnsupportedMethodException(
           'HTTP method $method is not supported',
         ),
@@ -260,7 +274,7 @@ class APIService {
   Future<Farmer> updateFarmer(Farmer farmer) async {
     final responseData = await _makeRequest(
       'PUT',
-      Uri.parse('${URL.farmers}${farmer.id}'),
+      Uri.parse('${URL.farmers}${farmer.id}/'),
       body: farmer.toJsonOnline(),
     );
 
