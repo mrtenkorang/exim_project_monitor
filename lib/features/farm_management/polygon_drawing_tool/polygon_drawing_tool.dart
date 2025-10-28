@@ -33,6 +33,7 @@ class PolygonDrawingTool extends StatefulWidget {
   final DrawingSaveCallback onSave;
   final Set<Polygon> layers;
   final Polygon? initialPolygon;
+  final Set<Marker>? initialMarkers;
   final bool? viewInitialPolygon;
   final bool? useBackgroundLayers;
   final LatLngBounds? currentBounds;
@@ -43,7 +44,7 @@ class PolygonDrawingTool extends StatefulWidget {
   final bool? viewOnlyMap;
   final double? maxAccuracy;
   const PolygonDrawingTool({
-    Key? key,
+    super.key,
     required this.onSave,
     required this.layers,
     required this.useBackgroundLayers,
@@ -56,7 +57,8 @@ class PolygonDrawingTool extends StatefulWidget {
     this.persistMaxAccuracy = false,
     this.maxAccuracy,
     this.viewOnlyMap = false,
-  }) : super(key: key);
+    this.initialMarkers,
+  });
 
   @override
   State<PolygonDrawingTool> createState() => _PolygonDrawingToolState();
@@ -101,6 +103,7 @@ class _PolygonDrawingToolState extends State<PolygonDrawingTool>
   final GlobalKey _keyAddInputButton = const GlobalObjectKey(
     "_keyAddInputButton",
   );
+  final GlobalKey _keyResetButton = const GlobalObjectKey("_keyResetButton");
   final GlobalKey _keyBackspaceButton = const GlobalObjectKey(
     "_keyBackspaceButton",
   );
@@ -278,8 +281,21 @@ class _PolygonDrawingToolState extends State<PolygonDrawingTool>
       }
     }
 
+    if (widget.initialMarkers != null && widget.initialMarkers!.isNotEmpty) {
+      markers.addAll(widget.initialMarkers!);
+    }
+
     if (widget.viewInitialPolygon == true && widget.initialPolygon != null) {
-      polygons.add(widget.initialPolygon!);
+      final polygon = widget.initialPolygon!;
+      final polygonWithId = Polygon(
+        polygonId: polygon.polygonId,
+        points: polygon.points,
+        strokeWidth: polygon.strokeWidth,
+        strokeColor: polygon.strokeColor,
+        fillColor: polygon.fillColor.withOpacity(0.2),
+        consumeTapEvents: true,
+      );
+      polygons.add(polygonWithId);
     }
 
     setState(() {});
@@ -553,8 +569,10 @@ class _PolygonDrawingToolState extends State<PolygonDrawingTool>
                               RoundedIconButton(
                                 icon: const Icon(Icons.arrow_back),
                                 size: 45,
-                                backgroundColor: Theme.of(context).colorScheme.primary,
-                                onTap: (){
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.primary,
+                                onTap: () {
                                   Navigator.pop(context);
                                 },
                               ),
@@ -704,6 +722,30 @@ class _PolygonDrawingToolState extends State<PolygonDrawingTool>
                               }
                             },
                           ),
+
+                          // Reset map for new mapping
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8.0, top: 8.0),
+                            child: controlButton(
+                              key: _keyResetButton,
+                              backgroundColor: Colors.black54,
+                              child: const Text(
+                                "Reset",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  markers.clear();
+                                  polygons.clear();
+                                });
+                              },
+                            ),
+                          ),
+
                           Positioned(
                             right: 12,
                             top: 12,
@@ -1021,9 +1063,7 @@ class _PolygonDrawingToolState extends State<PolygonDrawingTool>
 
                                     // verticalPadding: 0.0,
                                     // horizontalPadding: 8.0,
-
                                     onTap: () {
-
                                       userCurrentLocation!.getUserLocation(
                                         forceEnableLocation: true,
                                         onLocationEnabled: (isEnabled, currentPosition) {
@@ -1034,7 +1074,7 @@ class _PolygonDrawingToolState extends State<PolygonDrawingTool>
                                                     currentPosition!.accuracy
                                                         .toString(),
                                                   ) <
-                                                  30) {
+                                                  3) {
                                                 if (isLocationInsidePolygon(
                                                   LatLng(
                                                     currentPosition.latitude!,
@@ -1251,11 +1291,11 @@ class _PolygonDrawingToolState extends State<PolygonDrawingTool>
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                          markers.length >= 3
+                          markers.length >= 3 && polygons.isNotEmpty
                               ? Padding(
                                   padding: const EdgeInsets.only(top: 3.0),
                                   child: Text(
-                                    "Estimated Area in Hectares : ${calculatePolygonArea(polygons.where((element) => element.polygonId == PolygonId(polyID!)).first.points).truncateToDecimalPlaces(6).toString()}",
+                                    "Estimated Area in Hectares : ${calculatePolygonArea(polygons.first.points).truncateToDecimalPlaces(6).toString()}",
                                     style: const TextStyle(
                                       fontSize: 13,
                                       color: Colors.black,
