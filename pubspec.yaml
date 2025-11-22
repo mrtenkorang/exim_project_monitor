@@ -46,6 +46,10 @@ dependencies:
   provider: ^6.1.1
   get_it: ^7.6.7
   riverpod: ^2.4.9
+  
+  # File Export & Sharing
+
+  share_plus: ^12.0.1
 
   
   # Database & Storage

@@ -171,7 +171,7 @@ class _FarmerListScreenState extends State<FarmerListScreen> {
                   border: InputBorder.none,
                   hintStyle: TextStyle(color: Colors.white70),
                 ),
-                style: const TextStyle(color: Colors.white),
+                // style: const TextStyle(color: Colors.white),
                 autofocus: true,
               )
             : const Text('Farmers'),

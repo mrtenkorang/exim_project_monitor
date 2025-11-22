@@ -1,6 +1,11 @@
+import 'dart:io';
 import 'package:exim_project_monitor/core/cache_service/cache_service.dart';
 import 'package:exim_project_monitor/core/models/user_model.dart';
 import 'package:exim_project_monitor/core/services/api/api.dart';
+import 'package:exim_project_monitor/core/services/export/export_service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:exim_project_monitor/features/farm_management/add_farm.dart';
 import 'package:exim_project_monitor/features/farmer_management/add_farmer.dart';
 import 'package:exim_project_monitor/features/farmer_management/history/farmer_history.dart';
@@ -38,6 +43,175 @@ class _HomeState extends State<Home> {
     setState(() {
       _isLoading = false;
     });
+  }
+
+  // Show export options dialog
+  void _showExportOptions(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Column(
+            children: [
+              Icon(
+                Icons.download_rounded,
+                size: 40,
+                color: Theme.of(context).primaryColor,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Export Farm Data',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Choose the export format for your farm data:',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+              SizedBox(height: 16),
+            ],
+          ),
+          actions: [
+            // Format Selection Row
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await _exportData('excel');
+                    },
+                    icon: const Icon(Icons.table_chart, size: 18),
+                    label: const Text('Excel'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.blue,
+                      side: const BorderSide(color: Colors.blue),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await _exportData('csv');
+                    },
+                    icon: const Icon(Icons.table_view, size: 18),
+                    label: const Text('CSV'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.green,
+                      side: const BorderSide(color: Colors.green),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // const SizedBox(height: 8),
+            // Row(
+            //   children: [
+            //     Expanded(
+            //       child: OutlinedButton.icon(
+            //         onPressed: () async {
+            //           Navigator.pop(context);
+            //           await _exportData('json');
+            //         },
+            //         icon: const Icon(Icons.data_object, size: 18),
+            //         label: const Text('JSON'),
+            //         style: OutlinedButton.styleFrom(
+            //           foregroundColor: Colors.orange,
+            //           side: const BorderSide(color: Colors.orange),
+            //         ),
+            //       ),
+            //     ),
+            //   ],
+            // ),
+            const SizedBox(height: 16),
+
+            // Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey,
+                    ),
+                    child: const Text('CANCEL'),
+                  ),
+                ),
+                // Expanded(
+                //   child: ElevatedButton(
+                //     onPressed: () async {
+                //       Navigator.pop(context);
+                //       await _exportData('csv');
+                //     },
+                //     style: ElevatedButton.styleFrom(
+                //       backgroundColor: Theme.of(context).primaryColor,
+                //     ),
+                //     child: const Text(
+                //       'EXPORT',
+                //       style: TextStyle(color: Colors.white),
+                //     ),
+                //   ),
+                // ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Handle the actual export
+  Future<void> _exportData(String format) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final exportService = ExportService();
+    
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
+
+      if (format == 'excel') {
+        await exportService.exportFarmsToExcel();
+      } else {
+        await exportService.exportFarmsToCSV();
+      }
+
+      // Close the loading dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(content: Text('Farm data exported successfully')),
+        );
+      }
+    } catch (e) {
+      // Close the loading dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Failed to export: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -448,6 +622,16 @@ class _HomeState extends State<Home> {
                         builder: (context) => const SyncPage(),
                       ),
                     );
+                  },
+                ),
+
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.upload_file,
+                  title: "Export farm data",
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showExportOptions(context);
                   },
                 ),
 

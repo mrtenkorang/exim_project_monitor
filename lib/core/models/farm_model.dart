@@ -11,6 +11,7 @@ class Farm {
   final String visitId;
   final String dateOfVisit;
   final String mainBuyers;
+
   /// JSON-encoded string representing the farm boundary polygon as a list of LatLng points
   /// Example: '[{"latitude":1.2345,"longitude":2.3456},...]'
   final Uint8List? farmBoundaryPolygon;
@@ -150,7 +151,9 @@ class Farm {
     // Handle potential null or empty polygon data
     Uint8List? boundaryPolygon;
     final boundaryString = map['farmBoundaryPolygon'];
-    if (boundaryString != null && boundaryString is String && boundaryString.isNotEmpty) {
+    if (boundaryString != null &&
+        boundaryString is String &&
+        boundaryString.isNotEmpty) {
       boundaryPolygon = Uint8List.fromList(utf8.encode(boundaryString));
     }
 
@@ -178,7 +181,9 @@ class Farm {
       location: map['location'] ?? '',
       isSynced: map['isSynced'] == 1,
       createdAt: DateTime.parse(map['createdAt']),
-      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'])
+          : null,
 
       // NEW FIELDS WITH NULL SAFETY
       latitude: (map['latitude'] as num?)?.toDouble() ?? 0.0,
@@ -243,17 +248,21 @@ class Farm {
       dateOfVisit: dateOfVisit ?? this.dateOfVisit,
       mainBuyers: mainBuyers ?? this.mainBuyers,
       farmBoundaryPolygon: farmBoundaryPolygon ?? this.farmBoundaryPolygon,
-      landUseClassification: landUseClassification ?? this.landUseClassification,
+      landUseClassification:
+          landUseClassification ?? this.landUseClassification,
       accessibility: accessibility ?? this.accessibility,
-      proximityToProcessingFacility: proximityToProcessingFacility ?? this.proximityToProcessingFacility,
+      proximityToProcessingFacility:
+          proximityToProcessingFacility ?? this.proximityToProcessingFacility,
       serviceProvider: serviceProvider ?? this.serviceProvider,
-      cooperativesOrFarmerGroups: cooperativesOrFarmerGroups ?? this.cooperativesOrFarmerGroups,
+      cooperativesOrFarmerGroups:
+          cooperativesOrFarmerGroups ?? this.cooperativesOrFarmerGroups,
       valueChainLinkages: valueChainLinkages ?? this.valueChainLinkages,
       officerName: officerName ?? this.officerName,
       officerId: officerId ?? this.officerId,
       observations: observations ?? this.observations,
       issuesIdentified: issuesIdentified ?? this.issuesIdentified,
-      infrastructureIdentified: infrastructureIdentified ?? this.infrastructureIdentified,
+      infrastructureIdentified:
+          infrastructureIdentified ?? this.infrastructureIdentified,
       recommendedActions: recommendedActions ?? this.recommendedActions,
       followUpStatus: followUpStatus ?? this.followUpStatus,
       farmSize: farmSize ?? this.farmSize,
@@ -316,10 +325,16 @@ class Farm {
     if (points.isEmpty) return null;
 
     try {
-      final jsonData = jsonEncode(points.map((point) => {
-        'latitude': point.latitude,
-        'longitude': point.longitude,
-      }).toList());
+      final jsonData = jsonEncode(
+        points
+            .map(
+              (point) => {
+                'latitude': point.latitude,
+                'longitude': point.longitude,
+              },
+            )
+            .toList(),
+      );
       return Uint8List.fromList(utf8.encode(jsonData));
     } catch (e) {
       debugPrint('Error encoding boundary coordinates: $e');
@@ -334,7 +349,8 @@ class Farm {
       'name': '$cropType Farm',
       'size': '$farmSize ha',
       'crop': cropType,
-      'location': 'Lat: ${latitude.toStringAsFixed(4)}, Lng: ${longitude.toStringAsFixed(4)}',
+      'location':
+          'Lat: ${latitude.toStringAsFixed(4)}, Lng: ${longitude.toStringAsFixed(4)}',
       'coordinates': coordinates,
       'hasBoundary': hasBoundaryPolygon,
       'boundaryPoints': boundaryCoordinates.length,
@@ -362,14 +378,8 @@ class Farm {
 
   @override
   int get hashCode {
-    return Object.hash(
-      id,
-      visitId,
-      latitude,
-      longitude,
-    );
+    return Object.hash(id, visitId, latitude, longitude);
   }
-
 
   // Convert to JSON for API submission
   Map<String, dynamic> toJsonOnline() {
@@ -377,7 +387,9 @@ class Farm {
     List<List<double>> boundaryCoordsList = [];
     if (boundaryCoordinates.isNotEmpty) {
       // Convert each LatLng to a [lat, lng] pair
-      boundaryCoordsList = boundaryCoordinates.map((latLng) => [latLng.latitude, latLng.longitude]).toList();
+      boundaryCoordsList = boundaryCoordinates
+          .map((latLng) => [latLng.latitude, latLng.longitude])
+          .toList();
     }
 
     // Format dates to YYYY-MM-DD
@@ -393,7 +405,7 @@ class Farm {
 
     // Ensure area_hectares is a double and at least 0.1
     final area = max(0.1, double.tryParse(farmSize) ?? 0.1);
-    
+
     // Ensure officer is an integer (PK)
     final officerIdInt = int.tryParse(officerId) ?? 0;
 
@@ -428,7 +440,19 @@ class Farm {
       'status': "active",
       'last_visit_date': formatDate(DateTime.now().toIso8601String()),
       'validation_status': false,
+
+      "crop_type": cropType,
+      "variety": varietyBreed,
+      "planting_date": formatDate(plantingDate),
+      "labours_hired": labourHired,
+      "male_labors": maleWorkers,
+      "female_labors": femaleWorkers,
+      "planting_density": plantingDensity,
+      "total_trees": 0,
+      "tree_density": 0,
+      "estimated_yield": estimatedYield,
+      "yield_in_pre_season": previousYield,
+      "harvest_date": formatDate(harvestDate),
     };
   }
-
 }
